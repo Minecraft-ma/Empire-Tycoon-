@@ -13,10 +13,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
 
       - name: Setup Android SDK
@@ -29,6 +29,7 @@ jobs:
 
       - name: Prepare build environment
         run: |
+          chmod +x gradlew
           touch .env
           if [ ! -f debug.keystore ]; then
             keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
@@ -37,8 +38,8 @@ jobs:
             echo '{"project_info":{"project_number":"123456789","project_id":"empire-tycoon","storage_bucket":"empire-tycoon.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:123456789:android:abcdef","android_client_info":{"package_name":"com.aistudio.empiretycoon.vkmqza"}},"oauth_client":[],"api_key":[{"current_key":"AIzaSyMockKeyForBuildOnly123456789"}],"services":{"analytics_service":{"status":1}}}],"configuration_version":"1"}' > app/google-services.json
           fi
 
-      - name: Build Debug APK with Gradle
-        run: gradle assembleDebug --stacktrace --no-daemon --no-configuration-cache -Djava.awt.headless=true -Dkotlin.compiler.execution.strategy=daemon -Dksp.incremental=false
+      - name: Build Debug APK with Gradle Wrapper
+        run: ./gradlew assembleDebug --stacktrace --no-daemon -Djava.awt.headless=true -Dkotlin.compiler.execution.strategy=daemon -Dksp.incremental=false
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
