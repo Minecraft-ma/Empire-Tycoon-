@@ -1,0 +1,7 @@
+{
+  "name": "Empire Tycoon",
+  "description": "Jeu de gestion et de simulation d'empire financier et d'entreprise virtuelle avec monétisation gamifiée, sponsors interactifs et mini-jeux d'action.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
