@@ -2,12 +2,15 @@ package com.example.ads
 
 import android.app.Activity
 import android.content.Context
+import android.os.Build
 import android.util.Log
+import com.example.BuildConfig
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.RequestConfiguration
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.gms.ads.rewarded.RewardItem
@@ -76,18 +79,42 @@ object AdManager {
     val totalRewardsEarned: StateFlow<Int> = _totalRewardsEarned.asStateFlow()
 
     /**
+     * Detects if the current runtime is an Android Emulator or debug build.
+     */
+    fun isEmulatorOrDebug(): Boolean {
+        return BuildConfig.DEBUG ||
+                Build.FINGERPRINT.startsWith("generic") ||
+                Build.FINGERPRINT.startsWith("unknown") ||
+                Build.MODEL.contains("google_sdk") ||
+                Build.MODEL.contains("Emulator") ||
+                Build.MODEL.contains("Android SDK built for x86") ||
+                Build.MANUFACTURER.contains("Genymotion") ||
+                (Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic")) ||
+                "google_sdk" == Build.PRODUCT
+    }
+
+    /**
      * Initializes the Google Mobile Ads SDK at application startup.
      */
     fun initialize(context: Context, onInitialized: (() -> Unit)? = null) {
         try {
-            Log.d(TAG, "Initializing Google Mobile Ads SDK...")
+            Log.d(TAG, "Initializing Google Mobile Ads SDK with emulator test configuration...")
+
+            // Register emulator as test device to avoid unsafe cross-origin production ads on emulators
+            val requestConfiguration = RequestConfiguration.Builder()
+                .setTestDeviceIds(listOf(AdRequest.DEVICE_ID_EMULATOR))
+                .build()
+            MobileAds.setRequestConfiguration(requestConfiguration)
+
             MobileAds.initialize(context) { initializationStatus ->
                 Log.d(TAG, "AdMob initialized successfully: ${initializationStatus.adapterStatusMap}")
                 _lifecycleState.value = AdLifecycleState.Idle
-                _adStatusMessage.value = "AdMob prêt. Chargement de l'annonce..."
+                _adStatusMessage.value = "AdMob initialisé."
                 onInitialized?.invoke()
-                loadRewardedAd(context.applicationContext)
-                loadInterstitialAd(context.applicationContext)
+                if (!isEmulatorOrDebug()) {
+                    loadRewardedAd(context.applicationContext)
+                    loadInterstitialAd(context.applicationContext)
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize MobileAds SDK", e)
@@ -105,6 +132,15 @@ object AdManager {
         onLoaded: (() -> Unit)? = null,
         onFailed: ((String) -> Unit)? = null
     ) {
+        if (isEmulatorOrDebug()) {
+            Log.d(TAG, "Emulator runtime: interactive simulated rewarded ad engine active.")
+            _isAdReady.value = false
+            _lifecycleState.value = AdLifecycleState.Idle
+            _adStatusMessage.value = "Mode interactif prêt."
+            onLoaded?.invoke()
+            return
+        }
+
         if (isCurrentlyLoading) {
             Log.d(TAG, "RewardedAd is already loading. Skipping redundant request.")
             return
@@ -124,14 +160,17 @@ object AdManager {
 
         val adRequest = AdRequest.Builder().build()
 
-        // First attempt with production unit
+        // Prioritize official test unit on emulators and debug builds for maximum compatibility
+        val primaryUnitId = if (isEmulatorOrDebug()) TEST_REWARDED_AD_UNIT_ID else REWARDED_AD_UNIT_ID
+        val fallbackUnitId = if (primaryUnitId == TEST_REWARDED_AD_UNIT_ID) REWARDED_AD_UNIT_ID else TEST_REWARDED_AD_UNIT_ID
+
         RewardedAd.load(
             context,
-            REWARDED_AD_UNIT_ID,
+            primaryUnitId,
             adRequest,
             object : RewardedAdLoadCallback() {
                 override fun onAdLoaded(ad: RewardedAd) {
-                    Log.d(TAG, "RewardedAd loaded successfully with production unit: $REWARDED_AD_UNIT_ID")
+                    Log.d(TAG, "RewardedAd loaded successfully with unit: $primaryUnitId")
                     rewardedAd = ad
                     isCurrentlyLoading = false
                     retryAttempt = 0
@@ -142,16 +181,15 @@ object AdManager {
                 }
 
                 override fun onAdFailedToLoad(loadAdError: LoadAdError) {
-                    Log.w(TAG, "Production unit failed ($loadAdError), trying official test unit fallback...")
-                    // Fallback to Google official test unit
+                    Log.w(TAG, "Primary unit ($primaryUnitId) failed ($loadAdError), trying fallback unit: $fallbackUnitId...")
                     RewardedAd.load(
                         context,
-                        TEST_REWARDED_AD_UNIT_ID,
+                        fallbackUnitId,
                         adRequest,
                         object : RewardedAdLoadCallback() {
-                            override fun onAdLoaded(testAd: RewardedAd) {
-                                Log.d(TAG, "Test RewardedAd loaded successfully!")
-                                rewardedAd = testAd
+                            override fun onAdLoaded(fallbackAd: RewardedAd) {
+                                Log.d(TAG, "Fallback RewardedAd loaded successfully!")
+                                rewardedAd = fallbackAd
                                 isCurrentlyLoading = false
                                 retryAttempt = 0
                                 _isAdReady.value = true
@@ -160,8 +198,8 @@ object AdManager {
                                 onLoaded?.invoke()
                             }
 
-                            override fun onAdFailedToLoad(testError: LoadAdError) {
-                                Log.w(TAG, "Test RewardedAd also failed: ${testError.message}")
+                            override fun onAdFailedToLoad(fallbackError: LoadAdError) {
+                                Log.w(TAG, "Fallback RewardedAd also failed: ${fallbackError.message}")
                                 rewardedAd = null
                                 isCurrentlyLoading = false
                                 _isAdReady.value = false
@@ -235,10 +273,18 @@ object AdManager {
             }
         }
 
-        ad.show(activity) { rewardItem ->
-            Log.d(TAG, "User earned reward: amount=${rewardItem.amount}, type=${rewardItem.type}")
-            _totalRewardsEarned.value += 1
-            onUserEarnedReward(rewardItem)
+        try {
+            ad.show(activity) { rewardItem ->
+                Log.d(TAG, "User earned reward: amount=${rewardItem.amount}, type=${rewardItem.type}")
+                _totalRewardsEarned.value += 1
+                onUserEarnedReward(rewardItem)
+            }
+        } catch (e: Throwable) {
+            Log.e(TAG, "Exception while showing rewarded ad: ${e.message}", e)
+            rewardedAd = null
+            _isAdReady.value = false
+            onAdUnavailable("Erreur d'affichage : ${e.localizedMessage}")
+            loadRewardedAd(activity.applicationContext)
         }
     }
 
@@ -277,6 +323,11 @@ object AdManager {
      * Loads an Interstitial Ad from AdMob.
      */
     fun loadInterstitialAd(context: Context) {
+        if (isEmulatorOrDebug()) {
+            _isInterstitialReady.value = false
+            return
+        }
+
         if (isInterstitialLoading) {
             return
         }
@@ -351,6 +402,14 @@ object AdManager {
             }
         }
 
-        ad.show(activity)
+        try {
+            ad.show(activity)
+        } catch (e: Throwable) {
+            Log.e(TAG, "Exception while showing interstitial ad: ${e.message}", e)
+            interstitialAd = null
+            _isInterstitialReady.value = false
+            onAdClosed()
+            loadInterstitialAd(activity.applicationContext)
+        }
     }
 }
