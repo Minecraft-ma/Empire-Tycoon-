@@ -297,8 +297,11 @@ fun LuxuryAssetCard(
                         )
                     }
                     Text(
-                        text = if (asset.clickPowerBoostPercent > 0) "+${(asset.clickPowerBoostPercent * 100).toInt()}% Puissance Clic"
-                               else "+${(asset.passiveIncomeMultiplier * 100).toInt()}% Multiplicateur Global",
+                        text = when {
+                            asset.rentRevenuePerSec > 0 -> "+${MoneyFormatter.formatPerSec(asset.rentRevenuePerSec)} Loyers"
+                            asset.clickPowerBoostPercent > 0 -> "+${(asset.clickPowerBoostPercent * 100).toInt()}% Puissance Clic"
+                            else -> "+${(asset.passiveIncomeMultiplier * 100).toInt()}% Multiplicateur Global"
+                        },
                         color = EmeraldLight,
                         fontWeight = FontWeight.Black,
                         fontSize = 11.sp

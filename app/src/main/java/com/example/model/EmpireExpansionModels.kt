@@ -87,7 +87,19 @@ data class LuxuryAsset(
     val cost: Double,
     val isPurchased: Boolean = false,
     val prestigeScore: Int,
-    val passiveIncomeMultiplier: Double, // e.g. 0.15 = +15% passif
+    val rentRevenuePerSec: Double = 0.0,
+    val passiveIncomeMultiplier: Double = 0.0,
     val clickPowerBoostPercent: Double = 0.0,
-    val iconEmoji: String
-)
+    val iconEmoji: String,
+    val imageDrawableRes: Int? = null,
+    val renovationLevel: Int = 0
+) {
+    val effectiveRentRevenuePerSec: Double
+        get() = rentRevenuePerSec * (1.0 + (renovationLevel * 0.25))
+
+    val renovationCost: Double
+        get() = (cost * 0.15) * Math.pow(1.5, renovationLevel.toDouble())
+
+    val resaleValue: Double
+        get() = cost * 0.80 * (1.0 + (renovationLevel * 0.10))
+}

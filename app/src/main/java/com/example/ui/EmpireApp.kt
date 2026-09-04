@@ -54,10 +54,12 @@ import com.example.ui.components.MiniGameHostDialog
 import com.example.ui.components.LeaderboardDialog
 import com.example.ui.components.OfflineEarningsDialog
 import com.example.ui.components.PlayerProfileDialog
+import com.example.ui.components.SettingsDialog
 import com.example.ui.components.SimulatedAdDialog
 import com.example.ui.components.TopStatsBar
 import com.example.ui.components.UpgradesStoreDialog
 import com.example.ui.components.WheelOfFortuneDialog
+import com.example.ui.screens.RealEstateMarketDialog
 import com.example.ui.screens.ActionTappingScreen
 import com.example.ui.screens.AdMonetizationScreen
 import com.example.ui.screens.EmpireBusinessesScreen
@@ -165,19 +167,19 @@ fun EmpireApp(
         },
         bottomBar = {
             NavigationBar(
-                containerColor = DarkSurface,
+                containerColor = Color(0xFF0C1021),
                 tonalElevation = 8.dp,
                 modifier = Modifier
                     .windowInsetsPadding(WindowInsets.navigationBars)
-                    .border(width = 1.dp, color = DarkCardBorder)
+                    .border(width = 1.dp, color = Color(0xFF1E293B))
                     .testTag("bottom_navigation_bar")
             ) {
                 val tabs = listOf(
-                    Triple(0, "Dashboard", Icons.Default.FlashOn),
-                    Triple(1, "Empire", Icons.Default.Business),
+                    Triple(0, "Accueil", Icons.Default.FlashOn),
+                    Triple(1, "Propriétés", Icons.Default.Business),
                     Triple(2, "Bourse", Icons.Default.ShowChart),
-                    Triple(3, "Sponsors 💰", Icons.Default.MonetizationOn),
-                    Triple(4, "Direction", Icons.Default.WorkspacePremium)
+                    Triple(3, "Sponsors", Icons.Default.MonetizationOn),
+                    Triple(4, "Prestige", Icons.Default.WorkspacePremium)
                 )
 
                 tabs.forEach { (index, label, icon) ->
@@ -189,25 +191,25 @@ fun EmpireApp(
                             Icon(
                                 imageVector = icon,
                                 contentDescription = label,
-                                tint = if (isSelected) AmberDark else TextSecondary
+                                tint = if (isSelected) Color(0xFF4ADE80) else Color(0xFF64748B)
                             )
                         },
                         label = {
                             Text(
                                 text = label,
                                 fontSize = 10.sp,
-                                fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium,
-                                color = if (isSelected) AmberDark else TextSecondary,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) Color(0xFF4ADE80) else Color(0xFF64748B),
                                 maxLines = 1,
                                 softWrap = false
                             )
                         },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = AmberDark,
-                            selectedTextColor = AmberDark,
+                            selectedIconColor = Color(0xFF4ADE80),
+                            selectedTextColor = Color(0xFF4ADE80),
                             indicatorColor = Color(0xFF1E293B),
-                            unselectedIconColor = TextSecondary,
-                            unselectedTextColor = TextSecondary
+                            unselectedIconColor = Color(0xFF64748B),
+                            unselectedTextColor = Color(0xFF64748B)
                         ),
                         modifier = Modifier.testTag("nav_tab_$index")
                     )
@@ -220,28 +222,6 @@ fun EmpireApp(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Top Executive Stats Bar
-            TopStatsBar(
-                state = state,
-                onOpenProfile = { viewModel.openProfileDialog() },
-                onOpenDailyRewards = { viewModel.openDailyRewardsDialog() },
-                onOpenLeaderboard = { viewModel.openLeaderboard() }
-            )
-
-            // Live Economic Breaking News Flash Ticker
-            MarketNewsTickerBar(
-                activeNews = state.activeNews,
-                onOpenBourse = { viewModel.selectTab(2) }
-            )
-
-            // Dynamic Gamified Sponsor Banner
-            InteractiveSponsorBanner(
-                offer = state.activeSponsorOffer,
-                isVisible = state.isSponsorBannerVisible,
-                onPlayMiniGame = { viewModel.openActiveSponsorMiniGame() },
-                onDismiss = { viewModel.dismissSponsorBanner() }
-            )
-
             // Active Screen Content
             Box(
                 modifier = Modifier
@@ -255,7 +235,14 @@ fun EmpireApp(
                         onTriggerRewardedAd = { desc, bonus, action -> handleTriggerAd(desc, bonus, action) },
                         onOpenWheel = { viewModel.openWheelDialog() },
                         onActivateAutoTapper = { viewModel.activateAutoTapper(30) },
-                        onOpenUpgradesStore = { viewModel.openUpgradesStore() }
+                        onOpenUpgradesStore = { viewModel.openUpgradesStore() },
+                        onUpgradeClickLevel = { viewModel.upgradeClickLevel() },
+                        onTriggerAdBoost = { viewModel.triggerAdBoost() },
+                        onOpenProfile = { viewModel.openProfileDialog() },
+                        onOpenLeaderboard = { viewModel.openLeaderboard() },
+                        onOpenRealEstateMarket = { viewModel.openRealEstateMarket() },
+                        onOpenSettings = { viewModel.openSettingsDialog() },
+                        onUpdatePlayerName = { viewModel.updatePlayerName(it) }
                     )
                     1 -> EmpireBusinessesScreen(
                         state = state,
@@ -263,7 +250,10 @@ fun EmpireApp(
                         onHireManager = { viewModel.hireManager(it) },
                         onUnlockBusiness = { viewModel.unlockBusiness(it) },
                         onRenameBusiness = { id, name -> viewModel.renameBusiness(id, name) },
-                        onBuildingClick = { viewModel.collectManualBusiness(it) }
+                        onBuildingClick = { viewModel.collectManualBusiness(it) },
+                        onPurchaseProperty = { viewModel.purchaseLuxuryAsset(it) },
+                        onRenovateProperty = { viewModel.renovateLuxuryAsset(it) },
+                        onSellProperty = { viewModel.sellLuxuryAsset(it) }
                     )
                     2 -> TradingMarketScreen(
                         state = state,
@@ -412,6 +402,8 @@ fun EmpireApp(
                 onDeleteScore = { viewModel.deleteLeaderboardScore(it) },
                 onResetToHistorical = { viewModel.resetHistoricalLeaderboard() },
                 onClearPlayerRuns = { viewModel.clearPlayerLeaderboardRuns() },
+                onPublishOnlineScore = { viewModel.publishMyScoreToOnlineLeaderboard() },
+                onRefreshOnline = { viewModel.fetchOnlineLeaderboard() },
                 onDismiss = { viewModel.closeLeaderboard() }
             )
         }
@@ -438,6 +430,33 @@ fun EmpireApp(
             UpdateDialog(
                 updateInfo = updateInfo,
                 onDismiss = { UpdateManager.dismissUpdateDialog() }
+            )
+        }
+
+        // Real Estate Market & Residences Modal (Empire Tycoon)
+        if (state.isRealEstateMarketOpen) {
+            RealEstateMarketDialog(
+                isOpen = state.isRealEstateMarketOpen,
+                state = state,
+                onPurchaseProperty = { viewModel.purchaseLuxuryAsset(it) },
+                onRenovateProperty = { viewModel.renovateLuxuryAsset(it) },
+                onSellProperty = { viewModel.sellLuxuryAsset(it) },
+                onDismiss = { viewModel.closeRealEstateMarket() }
+            )
+        }
+
+        // Advanced Settings Dialog
+        if (state.isSettingsDialogOpen) {
+            SettingsDialog(
+                state = state,
+                onDismiss = { viewModel.closeSettingsDialog() },
+                onToggleSound = { viewModel.toggleSound() },
+                onToggleHaptics = { viewModel.toggleHaptics() },
+                onToggleBatterySaver = { viewModel.toggleBatterySaver() },
+                onSyncCloud = { viewModel.fetchOnlineLeaderboard() },
+                onExportSave = { viewModel.exportSaveData() },
+                onImportSave = { viewModel.importSaveData(it) },
+                onResetGame = { viewModel.resetGameProgress() }
             )
         }
     }

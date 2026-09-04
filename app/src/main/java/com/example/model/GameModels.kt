@@ -29,35 +29,72 @@ enum class BusinessCategory(
     val title: String,
     val shortName: String,
     val emoji: String,
-    val description: String
+    val description: String,
+    val startingPrice: Double = 10.0
 ) {
     MAGASINS(
         id = "MAGASINS",
-        title = "Magasins & Commerce",
+        title = "Magasins & Commerces",
         shortName = "Magasins",
-        emoji = "🏪",
-        description = "Boutiques, franchises de restauration, retail et distribution"
+        emoji = "🏬",
+        description = "Kiosques, commerces, cafés, supermarchés & luxe",
+        startingPrice = 10.0
+    ),
+    HOUSES(
+        id = "HOUSES",
+        title = "Maisons & Résidences",
+        shortName = "Maisons",
+        emoji = "🏡",
+        description = "Maisons de banlieue, villas, immeubles & gratte-ciel",
+        startingPrice = 185000.0
+    ),
+    TAXI(
+        id = "TAXI",
+        title = "Taxi & Transports",
+        shortName = "Taxis",
+        emoji = "🚕",
+        description = "Chauffeurs VTC, flottes de taxis urbains & limousines",
+        startingPrice = 350.0
+    ),
+    LIVRAISON(
+        id = "LIVRAISON",
+        title = "Delivery & Fret",
+        shortName = "Delivery",
+        emoji = "🚚",
+        description = "Coursiers express, centres de tri et logistique de fret",
+        startingPrice = 8000.0
     ),
     BANQUE(
         id = "BANQUE",
         title = "Banque & Finance",
         shortName = "Banques",
         emoji = "🏦",
-        description = "Agences de crédit, néo-banques, fonds et trading quant"
+        description = "Agences de crédit, néo-banques, trading & banque privée",
+        startingPrice = 120000.0
     ),
     INDUSTRIE(
         id = "INDUSTRIE",
-        title = "Industrie & Logistique",
+        title = "Industrie & Usines",
         shortName = "Industrie",
         emoji = "🏭",
-        description = "Flotte de fret, complexes robotisés, énergie et gigafactories"
+        description = "Ateliers, usines robotisées, énergie et gigafactories",
+        startingPrice = 150000.0
     ),
     TECH(
         id = "TECH",
-        title = "Tech & Médias",
-        shortName = "Tech",
+        title = "Tech & Startups",
+        shortName = "Tech / IA",
+        emoji = "💻",
+        description = "Studios de jeux, serveurs cloud et laboratoires d'IA",
+        startingPrice = 250000.0
+    ),
+    SPATIAL(
+        id = "SPATIAL",
+        title = "Spatial & Aérospatial",
+        shortName = "Spatial",
         emoji = "🚀",
-        description = "Studios IA, plateformes de streaming et centres cloud"
+        description = "Drones cargos, spatioport et constellations orbitales",
+        startingPrice = 15000000.0
     )
 }
 
@@ -71,9 +108,9 @@ data class Business(
     val baseRevenuePerSec: Double,
     val isUnlocked: Boolean = false,
     val managerHired: Boolean = false,
-    val managerName: String,
+    val managerName: String = "Automatisé",
     val managerCost: Double,
-    val managerAvatar: String = "👤",
+    val managerAvatar: String = "⚡",
     val description: String,
     val iconType: String = "coffee",
     val cycleTimeSeconds: Float = 1.0f,
@@ -250,6 +287,25 @@ data class ProductivityUpgrade(
 }
 
 object MoneyFormatter {
+    fun formatExact(amount: Double): String {
+        if (amount.isNaN() || amount.isInfinite()) return "$ 0.00"
+        val symbols = java.text.DecimalFormatSymbols(java.util.Locale.US).apply {
+            groupingSeparator = ' '
+            decimalSeparator = '.'
+        }
+        val df = java.text.DecimalFormat("$ #,##0.00", symbols)
+        return df.format(amount)
+    }
+
+    fun formatCardBalance(amount: Double): String {
+        if (amount.isNaN() || amount.isInfinite()) return "$ 0.00"
+        return if (amount < 10_000_000.0) {
+            formatExact(amount)
+        } else {
+            format(amount)
+        }
+    }
+
     fun format(amount: Double): String {
         if (amount.isNaN() || amount.isInfinite()) return "$0"
         return when {

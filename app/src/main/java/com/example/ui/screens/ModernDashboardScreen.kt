@@ -1,7 +1,6 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -9,12 +8,9 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,69 +28,57 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Apartment
-import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.BusinessCenter
-import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.Casino
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.LockOpen
-import androidx.compose.material.icons.filled.MonetizationOn
-import androidx.compose.material.icons.filled.PlayCircle
-import androidx.compose.material.icons.filled.RocketLaunch
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SmartToy
-import androidx.compose.material.icons.filled.Stars
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.TrendingUp
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.WorkspacePremium
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.Surface
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.MoneyFormatter
 import com.example.ui.theme.AmberDark
-import com.example.ui.theme.AmberLight
 import com.example.ui.theme.AmberPrimary
 import com.example.ui.theme.CrimsonFrenzy
 import com.example.ui.theme.CyberCyan
@@ -102,33 +86,23 @@ import com.example.ui.theme.DarkBackground
 import com.example.ui.theme.DarkCardBorder
 import com.example.ui.theme.DarkSurface
 import com.example.ui.theme.DarkSurfaceVariant
-import com.example.ui.theme.DesignSystem
-import com.example.ui.theme.ElectricPurple
 import com.example.ui.theme.EmeraldDark
 import com.example.ui.theme.EmeraldLight
 import com.example.ui.theme.EmeraldPrimary
-import com.example.ui.theme.NeonPink
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextSecondary
 import com.example.viewmodel.GameUiState
-import kotlin.math.max
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
- * Modèle de données pour une Carte de Sponsor avec mécanique de révélation de bonus.
+ * Modèle de particule flottante lors du tap
  */
-data class SponsorCardData(
-    val id: String,
-    val brandName: String,
-    val category: String,
-    val sponsorIcon: ImageVector,
-    val brandColor: Color,
-    val bonusTag: String,
-    val teaserText: String,
-    val bonusTitle: String,
-    val bonusValueLabel: String,
-    val bonusDescription: String,
-    val actionType: String,
-    val baseBonusMultiplier: Double = 1.0
+data class TapParticle(
+    val id: Long,
+    val text: String,
+    val xOffset: Float,
+    val yOffset: Float
 )
 
 @Composable
@@ -139,1030 +113,718 @@ fun ModernDashboardScreen(
     onOpenWheel: () -> Unit,
     onActivateAutoTapper: () -> Unit,
     onOpenUpgradesStore: () -> Unit = {},
+    onUpgradeClickLevel: () -> Unit = {},
+    onTriggerAdBoost: () -> Unit = {},
+    onOpenProfile: () -> Unit = {},
+    onOpenLeaderboard: () -> Unit = {},
+    onOpenRealEstateMarket: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
+    onUpdatePlayerName: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val haptic = LocalHapticFeedback.current
+    val coroutineScope = rememberCoroutineScope()
+    val particles = remember { mutableStateListOf<TapParticle>() }
     var isPressed by remember { mutableStateOf(false) }
-    var showExactBalance by remember { mutableStateOf(false) }
 
-    // État de révélation pour chaque carte sponsor (id -> isRevealed)
-    val revealedCards = remember { mutableStateMapOf<String, Boolean>() }
-    // État de réclamation pour chaque carte sponsor (id -> isClaimed)
-    val claimedCards = remember { mutableStateMapOf<String, Boolean>() }
-    // Filtre de catégorie pour les sponsors
-    var selectedCategory by remember { mutableStateOf("Tous") }
+    // Dialog pour modifier le nom du joueur
+    var showEditNameDialog by remember { mutableStateOf(false) }
+    var tempPlayerName by remember { mutableStateOf(state.playerName) }
 
-    // Animations pour l'icône interactive d'entreprise
     val coreScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.88f else 1.0f,
-        animationSpec = spring(dampingRatio = 0.38f, stiffness = 650f),
-        label = "businessCoreScale"
+        targetValue = if (isPressed) 0.92f else 1.0f,
+        animationSpec = tween(durationMillis = 80),
+        label = "coreScale"
     )
 
-    val infiniteTransition = rememberInfiniteTransition(label = "businessAuraPulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1.0f,
-        targetValue = 1.14f,
+    // Pulsation continue des anneaux du radar
+    val infiniteTransition = rememberInfiniteTransition(label = "radarPulse")
+    val pulseRing1 by infiniteTransition.animateFloat(
+        initialValue = 0.85f,
+        targetValue = 1.15f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1100, easing = FastOutSlowInEasing),
+            animation = tween(1400, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "pulseScale"
+        label = "pulse1"
     )
-
-    val haloRotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
+    val pulseRing2 by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.25f,
         animationSpec = infiniteRepeatable(
-            animation = tween(12000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
+            animation = tween(1800, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
         ),
-        label = "haloRotation"
+        label = "pulse2"
     )
 
-    // Définition de la liste des sponsors à fort engagement
-    val sponsorCards = remember {
-        listOf(
-            SponsorCardData(
-                id = "sponsor_apex_cash",
-                brandName = "Apex Capital Partners",
-                category = "Cash",
-                sponsorIcon = Icons.Default.MonetizationOn,
-                brandColor = EmeraldPrimary,
-                bonusTag = "INJECTION FLASH",
-                teaserText = "Contrat de Trésorerie Sécurisé",
-                bonusTitle = "Subvention Royale Immédiate",
-                bonusValueLabel = "+35% de Trésorerie Directe",
-                bonusDescription = "Versement instantané sur votre compte en banque sans contrepartie.",
-                actionType = "INSTANT_CASH_DROP",
-                baseBonusMultiplier = 1.35
-            ),
-            SponsorCardData(
-                id = "sponsor_quantum_turbo",
-                brandName = "Quantum Dynamics Lab",
-                category = "Boost",
-                sponsorIcon = Icons.Default.RocketLaunch,
-                brandColor = CyberCyan,
-                bonusTag = "MULTI SURCHARGE",
-                teaserText = "Accélérateur de Particules Financières",
-                bonusTitle = "Super Boost Turbo x4.0",
-                bonusValueLabel = "Revenus Globaux x4.0 (2 min)",
-                bonusDescription = "Quadruple instantanément le débit passif de toutes vos filiales.",
-                actionType = "SUPER_BOOST_4X",
-                baseBonusMultiplier = 4.0
-            ),
-            SponsorCardData(
-                id = "sponsor_titan_wallstreet",
-                brandName = "Titan Wall Street Hedge",
-                category = "Frénésie",
-                sponsorIcon = Icons.Default.LocalFireDepartment,
-                brandColor = CrimsonFrenzy,
-                bonusTag = "CLICS DORÉS",
-                teaserText = "Spéculation Ultra Haute Fréquence",
-                bonusTitle = "Mode Frénésie Totale x10",
-                bonusValueLabel = "+1000% Valeur de Clic",
-                bonusDescription = "Passe immédiatement votre bureau en état de Frénésie avec combo maximal.",
-                actionType = "FRENZY_BOOST",
-                baseBonusMultiplier = 10.0
-            ),
-            SponsorCardData(
-                id = "sponsor_nexus_ai",
-                brandName = "Nexus Cyber-Intelligence",
-                category = "Automatisation",
-                sponsorIcon = Icons.Default.SmartToy,
-                brandColor = ElectricPurple,
-                bonusTag = "ROBOT AUTONOME",
-                teaserText = "Algorithme de Signature Prédictive",
-                bonusTitle = "Assistant IA Auto-Tapper VIP",
-                bonusValueLabel = "Signature Automatique (45s)",
-                bonusDescription = "L'ordinateur quantique signe des contrats à la chaîne automatiquement.",
-                actionType = "AUTO_TAP_SPONSOR",
-                baseBonusMultiplier = 1.0
-            ),
-            SponsorCardData(
-                id = "sponsor_royal_monaco",
-                brandName = "Monaco Golden Reserve",
-                category = "Jackpot",
-                sponsorIcon = Icons.Default.Casino,
-                brandColor = AmberPrimary,
-                bonusTag = "JACKPOT ÉTOILÉ",
-                teaserText = "Consortium Bancaire Privé",
-                bonusTitle = "Coffre d'Or & Tour de Roue VIP",
-                bonusValueLabel = "Cash Surprise + Tour Garanti",
-                bonusDescription = "Ouvre l'accès immédiat à la Roue de la Fortune sans temps d'attente.",
-                actionType = "WHEEL_SPIN",
-                baseBonusMultiplier = 2.0
-            )
+    if (showEditNameDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditNameDialog = false },
+            title = {
+                Text("Modifier le nom du joueur", fontWeight = FontWeight.Bold, color = Color.White)
+            },
+            text = {
+                OutlinedTextField(
+                    value = tempPlayerName,
+                    onValueChange = { tempPlayerName = it },
+                    singleLine = true,
+                    label = { Text("Nom / Pseudo", color = TextSecondary) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (tempPlayerName.isNotBlank()) {
+                            onUpdatePlayerName(tempPlayerName)
+                        }
+                        showEditNameDialog = false
+                    }
+                ) {
+                    Text("Enregistrer", color = EmeraldPrimary, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditNameDialog = false }) {
+                    Text("Annuler", color = TextSecondary)
+                }
+            },
+            containerColor = DarkSurface,
+            shape = RoundedCornerShape(16.dp)
         )
-    }
-
-    val filteredSponsors = remember(selectedCategory, sponsorCards) {
-        if (selectedCategory == "Tous") sponsorCards
-        else sponsorCards.filter { it.category == selectedCategory }
     }
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(DarkBackground)
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF070C1A),
+                        Color(0xFF0A1024),
+                        Color(0xFF060914)
+                    )
+                )
+            )
+            .padding(horizontal = 16.dp, vertical = 10.dp)
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+            .testTag("modern_dashboard_screen"),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // ==========================================
-        // 1. PROMINENT BALANCE COUNTER (Material3)
-        // ==========================================
-        ElevatedCard(
+        // =========================================================================
+        // 1. TOP HEADER: Avatar + Title "Empire Tycoon" + Leaderboard + Settings
+        // =========================================================================
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    showExactBalance = !showExactBalance
-                }
-                .testTag("modern_dashboard_balance_card"),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.elevatedCardColors(
-                containerColor = DarkSurface
-            ),
-            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp)
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
+            // Bouton Avatar Joueur
+            IconButton(
+                onClick = onOpenProfile,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                EmeraldLight.copy(alpha = 0.45f),
-                                DarkSurface
-                            ),
-                            radius = 600f
-                        )
-                    )
-                    .border(
-                        width = 1.2.dp,
-                        brush = Brush.horizontalGradient(
-                            listOf(
-                                AmberPrimary.copy(alpha = 0.7f),
-                                EmeraldPrimary.copy(alpha = 0.5f),
-                                DarkCardBorder
-                            )
-                        ),
-                        shape = RoundedCornerShape(22.dp)
-                    )
-                    .padding(18.dp)
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF131C31))
+                    .border(1.dp, Color(0xFF263550), CircleShape)
+                    .testTag("profile_avatar_button")
             ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Icon(
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = "Profil Joueur",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            // Titre Empire Tycoon
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Empire ",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.5.sp
+                )
+                Text(
+                    text = "Tycoon",
+                    color = Color(0xFF4ADE80),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.5.sp
+                )
+            }
+
+            // Boutons d'action droite : Immobilier, Trophée Classement & Paramètres
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // Bouton Immobilier & Résidences
+                IconButton(
+                    onClick = onOpenRealEstateMarket,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF131C31))
+                        .border(1.dp, Color(0xFF38BDF8).copy(alpha = 0.5f), CircleShape)
+                        .testTag("real_estate_header_button")
                 ) {
-                    // Header du Balance Counter avec status live
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(EmeraldPrimary)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "TRÉSORERIE PRINCIPALE",
-                                color = TextSecondary,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.2.sp
-                            )
-                        }
+                    Text(text = "🏠", fontSize = 18.sp)
+                }
 
-                        // Badge de multiplicateur actif
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (state.isFrenzyActive) CrimsonFrenzy else AmberLight,
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                if (state.isFrenzyActive) Color.White.copy(alpha = 0.6f) else AmberPrimary.copy(alpha = 0.4f)
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = if (state.isFrenzyActive) Icons.Default.LocalFireDepartment else Icons.Default.Bolt,
-                                    contentDescription = null,
-                                    tint = if (state.isFrenzyActive) Color.White else AmberDark,
-                                    modifier = Modifier.size(12.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = if (state.isFrenzyActive) "x10 FRENZY" else "x${String.format("%.1f", state.globalMultiplier)} BOOST",
-                                    color = if (state.isFrenzyActive) Color.White else AmberDark,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Black
-                                )
-                            }
-                        }
-                    }
+                // Trophée Classement Joueurs Réels
+                IconButton(
+                    onClick = onOpenLeaderboard,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF131C31))
+                        .border(1.dp, Color(0xFF22C55E).copy(alpha = 0.5f), CircleShape)
+                        .testTag("leaderboard_header_button")
+                ) {
+                    Text(text = "🏆", fontSize = 18.sp)
+                }
 
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Grand Chiffre de Solde (Prominent Balance)
-                    Text(
-                        text = if (showExactBalance) "$${String.format("%,.2f", state.cash)}" else MoneyFormatter.format(state.cash),
-                        color = Color.White,
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = (-0.5).sp,
-                        textAlign = TextAlign.Center
+                // Paramètres / Profil
+                IconButton(
+                    onClick = onOpenSettings,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF131C31))
+                        .border(1.dp, Color(0xFF263550), CircleShape)
+                        .testTag("settings_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Paramètres",
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
                     )
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    // Débit Passif en Temps Réel (+$/sec)
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .background(
-                                color = EmeraldPrimary.copy(alpha = 0.14f),
-                                shape = RoundedCornerShape(16.dp)
-                            )
-                            .border(1.dp, EmeraldPrimary.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
-                            .padding(horizontal = 12.dp, vertical = 5.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.TrendingUp,
-                            contentDescription = null,
-                            tint = EmeraldPrimary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "+${MoneyFormatter.format(state.totalPassiveRevenuePerSec)} / sec",
-                            color = EmeraldDark,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Black
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    // Sous-métriques de l'Empire (Fortune Nette, Clic, Taps)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(horizontalAlignment = Alignment.Start) {
-                            Text("Valeur par Clic", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
-                            Text(
-                                text = "+${MoneyFormatter.format(state.cashPerTap)}",
-                                color = AmberDark,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Fortune Nette", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
-                            Text(
-                                text = MoneyFormatter.format(state.netWorth),
-                                color = CyberCyan,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("Niveau Prestige", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
-                            Text(
-                                text = "Niveau ${state.prestigeLevel}",
-                                color = ElectricPurple,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // ==========================================
-        // 2. LARGE INTERACTABLE BUSINESS ICON
-        // ==========================================
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+        // =========================================================================
+        // 2. VIZA BANK CARD UI (Exact match with reference image)
+        // =========================================================================
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("viza_bank_card"),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF161F30)),
+            border = androidx.compose.foundation.BorderStroke(
+                1.2.dp,
+                Brush.linearGradient(
+                    listOf(
+                        Color(0xFF334155),
+                        Color(0xFF1E293B),
+                        Color(0xFF475569)
+                    )
+                )
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
         ) {
-            // Bandeau de titre du Siège Mondial
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.WorkspacePremium,
-                    contentDescription = null,
-                    tint = AmberPrimary,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "QG DE L'EMPIRE COMMERCIAL",
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 1.1.sp
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Grande Icône Interactif d'Entreprise avec auras et animations
-            Box(
-                modifier = Modifier
-                    .size(200.dp)
-                    .scale(coreScale)
-                    .pointerInput(Unit) {
-                        detectTapGestures(
-                            onPress = { offset ->
-                                isPressed = true
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                tryAwaitRelease()
-                                isPressed = false
-                            },
-                            onTap = { offset ->
-                                val normalizedX = (offset.x / size.width).coerceIn(0.1f, 0.9f)
-                                val normalizedY = (offset.y / size.height).coerceIn(0.1f, 0.9f)
-                                onTap(normalizedX, normalizedY)
-                            }
-                        )
-                    }
-                    .testTag("large_interactable_business_icon"),
-                contentAlignment = Alignment.Center
-            ) {
-                // Anneau 1 : Halo pulsant extérieur
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .scale(pulseScale)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(
-                                    if (state.isFrenzyActive) CrimsonFrenzy.copy(alpha = 0.5f) else AmberPrimary.copy(alpha = 0.25f),
-                                    Color.Transparent
-                                )
-                            )
-                        )
-                )
-
-                // Anneau 2 : Couronne rotative externe métallisée
-                Box(
-                    modifier = Modifier
-                        .size(184.dp)
-                        .rotate(haloRotation)
-                        .clip(CircleShape)
-                        .border(
-                            width = 2.dp,
-                            brush = Brush.sweepGradient(
-                                listOf(
-                                    AmberPrimary,
-                                    EmeraldPrimary,
-                                    CyberCyan,
-                                    ElectricPurple,
-                                    AmberPrimary
-                                )
-                            ),
-                            shape = CircleShape
-                        )
-                )
-
-                // Anneau 3 : Disque central d'entreprise
-                Box(
-                    modifier = Modifier
-                        .size(154.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    DarkSurfaceVariant,
-                                    DarkSurface,
-                                    Color(0xFF0F172A)
-                                )
-                            )
-                        )
-                        .border(
-                            width = 3.dp,
-                            color = if (state.isFrenzyActive) CrimsonFrenzy else AmberPrimary,
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        // Grand icône représentatif du gratte-ciel / entreprise
-                        Icon(
-                            imageVector = if (state.isFrenzyActive) Icons.Default.LocalFireDepartment else Icons.Default.BusinessCenter,
-                            contentDescription = "Grande Icône d'Entreprise",
-                            tint = if (state.isFrenzyActive) CrimsonFrenzy else AmberPrimary,
-                            modifier = Modifier.size(62.dp)
-                        )
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        Text(
-                            text = if (state.isFrenzyActive) "FRÉNÉSIE !" else "TOUCHER",
-                            color = if (state.isFrenzyActive) Color.White else AmberDark,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 1.sp
-                        )
-
-                        Text(
-                            text = "+${MoneyFormatter.format(state.cashPerTap)}",
-                            color = EmeraldDark,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                    }
-                }
-
-                // Badge combo flottant sur l'icône
-                if (state.comboStreak > 1) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .offset(x = (-8).dp, y = 8.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(CrimsonFrenzy)
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = "x${state.comboStreak} 🔥",
-                            color = Color.White,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Black
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Jauge de progression vers le mode Frénésie
             Column(
                 modifier = Modifier
-                    .fillMaxWidth(0.85f),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .fillMaxWidth()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color(0xFF1E293B),
+                                Color(0xFF131B2B),
+                                Color(0xFF0F172A)
+                            )
+                        )
+                    )
+                    .padding(horizontal = 18.dp, vertical = 16.dp)
             ) {
+                // Ligne 1 : Trésorerie Principale
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (state.isFrenzyActive) "FRÉNÉSIE ROYALE ACTIVE (x10)" else "JAUGE DE FRÉNÉSIE",
-                        color = if (state.isFrenzyActive) CrimsonFrenzy else TextSecondary,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Black
+                        text = "💼 TRÉSORERIE DE L'EMPIRE",
+                        color = Color(0xFF38BDF8),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.sp
                     )
-                    Text(
-                        text = if (state.isFrenzyActive) "${state.frenzyTimeRemainingSec}s" else "${(state.frenzyProgress * 100).toInt()}%",
-                        color = if (state.isFrenzyActive) CrimsonFrenzy else AmberDark,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Black
-                    )
+
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFF22C55E).copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) {
+                        Text(
+                            text = "🟢 ACTIF",
+                            color = Color(0xFF4ADE80),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
+                // Ligne 2 : Label Balance + Nom du Joueur avec icône crayon
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Balance",
+                        color = Color(0xFF94A3B8),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable { showEditNameDialog = true }
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = if (state.playerName.isNotBlank()) state.playerName else "Player234",
+                            color = Color(0xFFE2E8F0),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Modifier le nom",
+                            tint = Color(0xFF94A3B8),
+                            modifier = Modifier.size(13.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Ligne 3 : Montant Géant du Solde
+                Text(
+                    text = "$ ${String.format("%,.2f", state.cash).replace(',', ' ')}",
+                    color = Color.White,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = (-0.5).sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Ligne 4 : Revenu passif en direct & Date d'expiration
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.TrendingUp,
+                            contentDescription = null,
+                            tint = Color(0xFF4ADE80),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "+${MoneyFormatter.format(state.totalPassiveRevenuePerSec)}/sec",
+                            color = Color(0xFF4ADE80),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Text(
+                        text = "07/29",
+                        color = Color(0xFF64748B),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // =========================================================================
+        // 3. CLICK POWER & LEVEL UP BOX (Integrated progress & instant upgrade)
+        // =========================================================================
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .clickable {
+                    if (state.cash >= state.clickUpgradeCost) {
+                        onUpgradeClickLevel()
+                    }
+                }
+                .testTag("click_upgrade_container"),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF131C31)),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1E293B))
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                // Top Row: Current $/click VS Next Level +$/click
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "$ ${String.format("%.2f", state.cashPerTap)} per click",
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = "+ $ ${String.format("%.2f", state.nextClickPowerGain)} per click",
+                            color = Color(0xFF4ADE80),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                        Text(
+                            text = "level ${state.clickLevel + 1}",
+                            color = Color(0xFF94A3B8),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Progress Bar vers le prochain niveau
+                val progress = (state.cash / state.clickUpgradeCost).toFloat().coerceIn(0f, 1f)
                 LinearProgressIndicator(
-                    progress = { if (state.isFrenzyActive) (state.frenzyTimeRemainingSec / 10f).coerceIn(0f, 1f) else state.frenzyProgress },
+                    progress = { progress },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(6.dp)
                         .clip(RoundedCornerShape(3.dp)),
-                    color = if (state.isFrenzyActive) CrimsonFrenzy else AmberPrimary,
-                    trackColor = DarkSurfaceVariant
+                    color = Color(0xFF22C55E),
+                    trackColor = Color(0xFF0F172A)
                 )
-            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
-            // Raccourcis rapides : Auto-Tapper & Roue
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedCard(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onActivateAutoTapper() },
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.outlinedCardColors(containerColor = DarkSurface),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        if (state.isAutoTapperActive) CrimsonFrenzy else CyberCyan.copy(alpha = 0.4f)
-                    )
+                // Coût du palier au centre
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.SmartToy,
-                            contentDescription = null,
-                            tint = if (state.isAutoTapperActive) CrimsonFrenzy else CyberCyan,
-                            modifier = Modifier.size(20.dp)
+                    Text(
+                        text = "$ ${String.format("%,.2f", state.clickUpgradeCost).replace(',', ' ')}",
+                        color = if (state.cash >= state.clickUpgradeCost) Color(0xFF4ADE80) else Color(0xFF94A3B8),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (state.cash >= state.clickUpgradeCost) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "• APPUYER POUR AMÉLIORER",
+                            color = Color(0xFF4ADE80),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                text = "Auto-Tapper IA",
-                                color = Color.White,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = if (state.isAutoTapperActive) "${state.autoTapperTimeRemainingSec}s restantes" else "Activer (30s)",
-                                color = if (state.isAutoTapperActive) CrimsonFrenzy else TextSecondary,
-                                fontSize = 9.sp
-                            )
-                        }
                     }
                 }
+            }
+        }
 
-                OutlinedCard(
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // =========================================================================
+        // 4. AD BOOST BANNER BUTTON (Red / Coral Pill Card from image)
+        // =========================================================================
+        val isAdBoostActive = state.adBoostTimeRemainingSec > 0
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .clickable { onTriggerAdBoost() }
+                .testTag("ad_boost_banner_button"),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (isAdBoostActive) Color(0xFFDC2626) else Color(0xFFEF4444)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                // Icône Clapperboard / Video
+                Box(
                     modifier = Modifier
-                        .weight(1f)
-                        .clickable { onOpenWheel() },
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.outlinedCardColors(containerColor = DarkSurface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, AmberPrimary.copy(alpha = 0.4f))
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.White.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Casino,
-                            contentDescription = null,
-                            tint = AmberDark,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                text = "Roue de la Fortune",
-                                color = Color.White,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = if (state.isDailySpinAvailable) "1 Tour Gratuit 🎁" else "Lancer",
-                                color = if (state.isDailySpinAvailable) EmeraldDark else TextSecondary,
-                                fontSize = 9.sp,
-                                fontWeight = if (state.isDailySpinAvailable) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Movie,
+                        contentDescription = "Ad Video",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column {
+                    Text(
+                        text = if (isAdBoostActive) "⚡ BOOST x2 ACTIF !" else "$ ${String.format("%.2f", state.cashPerTap * 2)} per click",
+                        color = if (isAdBoostActive) Color.White else Color(0xFF86EFAC),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                    Text(
+                        text = if (isAdBoostActive) "${state.adBoostTimeRemainingSec} secondes restantes" else "for 30 seconds",
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // =======================================================
-        // 3. LIST OF 'SPONSOR' AD-CARDS THAT REVEAL BONUSES
-        // =======================================================
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            // Header de la section Sponsors
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.CardGiftcard,
-                            contentDescription = null,
-                            tint = EmeraldPrimary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "SPONSORS & CONTRATS MYSTÈRES",
-                            color = Color.White,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 0.8.sp
-                        )
-                    }
-                    Text(
-                        text = "Révélez les cartes partenaires pour débloquer des méga-bonus",
-                        color = TextSecondary,
-                        fontSize = 10.sp
-                    )
-                }
-
-                // Compteur de cartes révélées
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = Color(0xFF1E293B)
-                ) {
-                    Text(
-                        text = "${revealedCards.size} / ${sponsorCards.size} révélés",
-                        color = CyberCyan,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Filtres de catégories pour les cartes de sponsors
-            val categories = listOf("Tous", "Cash", "Boost", "Frénésie", "Automatisation", "Jackpot")
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                contentPadding = PaddingValues(bottom = 6.dp)
-            ) {
-                items(categories) { cat ->
-                    val isSelected = selectedCategory == cat
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { selectedCategory = cat },
-                        label = {
-                            Text(
-                                text = cat,
-                                fontSize = 11.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = EmeraldPrimary,
-                            selectedLabelColor = Color.Black,
-                            containerColor = DarkSurface,
-                            labelColor = TextSecondary
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled = true,
-                            selected = isSelected,
-                            borderColor = if (isSelected) EmeraldPrimary else DarkCardBorder
-                        )
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Liste verticale des Cartes de Sponsors Interactives
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                filteredSponsors.forEach { sponsor ->
-                    val isRevealed = revealedCards[sponsor.id] == true
-                    val isClaimed = claimedCards[sponsor.id] == true
-
-                    SponsorAdCard(
-                        sponsor = sponsor,
-                        isRevealed = isRevealed,
-                        isClaimed = isClaimed,
-                        onReveal = {
+        // =========================================================================
+        // 5. CONCENTRIC GLOWING RADAR TAP AREA (Dollar + Tap Hand)
+        // =========================================================================
+        Box(
+            modifier = Modifier
+                .size(210.dp)
+                .scale(coreScale)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = { offset ->
+                            isPressed = true
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            revealedCards[sponsor.id] = true
+                            tryAwaitRelease()
+                            isPressed = false
                         },
-                        onClaimBonus = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            val bonusCash = when (sponsor.actionType) {
-                                "INSTANT_CASH_DROP" -> max(2500.0, state.cash * 0.35)
-                                "SUPER_BOOST_4X" -> max(1500.0, state.totalPassiveRevenuePerSec * 45.0)
-                                "FRENZY_BOOST" -> max(1000.0, state.cashPerTap * 150.0)
-                                else -> 2000.0
+                        onTap = { offset ->
+                            val normalizedX = (offset.x / size.width).coerceIn(0.1f, 0.9f)
+                            val normalizedY = (offset.y / size.height).coerceIn(0.1f, 0.9f)
+                            onTap(normalizedX, normalizedY)
+
+                            // Générer une particule visuelle
+                            val pid = System.currentTimeMillis()
+                            val textGain = "+$ ${String.format("%.2f", state.cashPerTap)}"
+                            particles.add(TapParticle(pid, textGain, (offset.x - size.width / 2) * 0.7f, (offset.y - size.height / 2) * 0.7f))
+
+                            coroutineScope.launch {
+                                delay(650)
+                                particles.removeAll { it.id == pid }
                             }
-
-                            // Déclenche l'annonce récompensée AdMob / simulée
-                            onTriggerRewardedAd(
-                                "${sponsor.brandName} : ${sponsor.bonusTitle}",
-                                bonusCash,
-                                sponsor.actionType
-                            )
-                            claimedCards[sponsor.id] = true
                         }
                     )
                 }
+                .testTag("radar_tap_area"),
+            contentAlignment = Alignment.Center
+        ) {
+            // Anneau 1 : Halo externe vert pulsant
+            Box(
+                modifier = Modifier
+                    .size(190.dp)
+                    .scale(pulseRing2)
+                    .clip(CircleShape)
+                    .border(1.2.dp, Color(0xFF22C55E).copy(alpha = 0.35f), CircleShape)
+            )
+
+            // Anneau 2 : Cercle intermédiaire
+            Box(
+                modifier = Modifier
+                    .size(150.dp)
+                    .scale(pulseRing1)
+                    .clip(CircleShape)
+                    .border(2.dp, Color(0xFF22C55E).copy(alpha = 0.65f), CircleShape)
+            )
+
+            // Anneau 3 : Disque central d'action
+            Box(
+                modifier = Modifier
+                    .size(110.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.radialGradient(
+                            listOf(
+                                Color(0xFF1E293B),
+                                Color(0xFF0F172A),
+                                Color(0xFF070C1A)
+                            )
+                        )
+                    )
+                    .border(2.5.dp, Color(0xFF22C55E), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    // Symbole Dollar néon vert
+                    Text(
+                        text = "$",
+                        color = Color(0xFF4ADE80),
+                        fontSize = 34.sp,
+                        fontWeight = FontWeight.Black
+                    )
+
+                    // Icône de main pointeur
+                    Icon(
+                        imageVector = Icons.Default.TouchApp,
+                        contentDescription = "Tap",
+                        tint = Color.White.copy(alpha = 0.9f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            // Particules flottantes
+            particles.forEach { particle ->
+                Text(
+                    text = particle.text,
+                    color = Color(0xFF4ADE80),
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier
+                        .offset(x = particle.xOffset.dp, y = (particle.yOffset - 35).dp)
+                )
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-    }
-}
+        Spacer(modifier = Modifier.height(10.dp))
 
-/**
- * Composant individuel pour une Carte de Sponsor qui révèle son bonus avec Material 3.
- */
-@Composable
-fun SponsorAdCard(
-    sponsor: SponsorCardData,
-    isRevealed: Boolean,
-    isClaimed: Boolean,
-    onReveal: () -> Unit,
-    onClaimBonus: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val borderColor by animateColorAsState(
-        targetValue = when {
-            isClaimed -> EmeraldPrimary.copy(alpha = 0.5f)
-            isRevealed -> sponsor.brandColor.copy(alpha = 0.8f)
-            else -> DarkCardBorder
-        },
-        label = "sponsorBorderColor"
-    )
-
-    ElevatedCard(
-        modifier = modifier
-            .fillMaxWidth()
-            .testTag("sponsor_card_${sponsor.id}"),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = DarkSurface
-        ),
-        elevation = CardDefaults.elevatedCardElevation(
-            defaultElevation = if (isRevealed) 4.dp else 2.dp
+        // Texte indicatif sous le radar
+        Text(
+            text = "Tap in this area to earn money",
+            color = Color(0xFF64748B),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium
         )
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.2.dp, borderColor, RoundedCornerShape(16.dp))
-                .background(
-                    if (isRevealed) {
-                        Brush.verticalGradient(
-                            listOf(
-                                sponsor.brandColor.copy(alpha = 0.12f),
-                                DarkSurface
-                            )
-                        )
-                    } else {
-                        Brush.linearGradient(
-                            listOf(
-                                DarkSurface,
-                                DarkSurfaceVariant
-                            )
-                        )
-                    }
-                )
-                .padding(14.dp)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // =========================================================================
+        // 6. QUICK ACTIONS: Auto-Tapper IA & Roue de Fortune (Compact, no empty gaps)
+        // =========================================================================
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                // Header du Sponsor (Marque & Badge de Statut)
+            // Carte Auto-Tapper
+            Card(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(14.dp))
+                    .clickable { onActivateAutoTapper() }
+                    .testTag("quick_auto_tapper"),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF131C31)),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    if (state.isAutoTapperActive) Color(0xFFEF4444) else Color(0xFF1E293B)
+                )
+            ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(sponsor.brandColor.copy(alpha = 0.2f))
-                                .border(1.dp, sponsor.brandColor.copy(alpha = 0.5f), RoundedCornerShape(10.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = sponsor.sponsorIcon,
-                                contentDescription = null,
-                                tint = sponsor.brandColor,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(10.dp))
-
-                        Column {
-                            Text(
-                                text = sponsor.brandName,
-                                color = Color.White,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Black
-                            )
-                            Text(
-                                text = sponsor.bonusTag,
-                                color = sponsor.brandColor,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-
-                    // Badge Scellé vs Découvert
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = when {
-                            isClaimed -> EmeraldLight
-                            isRevealed -> sponsor.brandColor.copy(alpha = 0.2f)
-                            else -> Color(0xFF1E293B)
-                        }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = when {
-                                    isClaimed -> Icons.Default.CheckCircle
-                                    isRevealed -> Icons.Default.LockOpen
-                                    else -> Icons.Default.Lock
-                                },
-                                contentDescription = null,
-                                tint = when {
-                                    isClaimed -> EmeraldDark
-                                    isRevealed -> sponsor.brandColor
-                                    else -> TextSecondary
-                                },
-                                modifier = Modifier.size(12.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = when {
-                                    isClaimed -> "RÉCLAMÉ"
-                                    isRevealed -> "RÉVÉLÉ !"
-                                    else -> "SCELLÉ"
-                                },
-                                color = when {
-                                    isClaimed -> EmeraldDark
-                                    isRevealed -> sponsor.brandColor
-                                    else -> TextSecondary
-                                },
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Black
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Contenu : Soit Masqué (À Révéler), Soit Découvert (Affichage du Bonus)
-                AnimatedVisibility(
-                    visible = !isRevealed,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                color = DarkSurfaceVariant.copy(alpha = 0.7f),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            .border(1.dp, DarkCardBorder, RoundedCornerShape(12.dp))
-                            .padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
+                    Icon(
+                        imageVector = Icons.Default.SmartToy,
+                        contentDescription = null,
+                        tint = if (state.isAutoTapperActive) Color(0xFFEF4444) else Color(0xFF38BDF8),
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
                         Text(
-                            text = "🎁 Offre Spéciale Partenaire Mystère",
-                            color = AmberDark,
+                            text = "Auto-Tapper",
+                            color = Color.White,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
-                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = sponsor.teaserText,
-                            color = TextSecondary,
-                            fontSize = 10.sp,
-                            textAlign = TextAlign.Center
+                            text = if (state.isAutoTapperActive) "${state.autoTapperTimeRemainingSec}s" else "Activer (30s)",
+                            color = if (state.isAutoTapperActive) Color(0xFFEF4444) else Color(0xFF94A3B8),
+                            fontSize = 10.sp
                         )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Button(
-                            onClick = onReveal,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(38.dp)
-                                .testTag("btn_reveal_${sponsor.id}"),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = sponsor.brandColor,
-                                contentColor = Color.Black
-                            )
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Visibility,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "RÉVÉLER LE BONUS SPONSOR 🔍",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Black
-                                )
-                            }
-                        }
                     }
                 }
+            }
 
-                AnimatedVisibility(
-                    visible = isRevealed,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
+            // Carte Roue de Fortune
+            Card(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(14.dp))
+                    .clickable { onOpenWheel() }
+                    .testTag("quick_wheel"),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF131C31)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1E293B))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                color = Color(0xFF0F172A),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            .border(1.dp, sponsor.brandColor.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                            .padding(12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = sponsor.bonusTitle,
-                                color = Color.White,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Black
-                            )
-                            Text(
-                                text = sponsor.bonusValueLabel,
-                                color = sponsor.brandColor,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Black
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
+                    Icon(
+                        imageVector = Icons.Default.Casino,
+                        contentDescription = null,
+                        tint = Color(0xFFFBBF24),
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
                         Text(
-                            text = sponsor.bonusDescription,
-                            color = TextSecondary,
-                            fontSize = 10.sp,
-                            lineHeight = 14.sp
+                            text = "Roue Fortune",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
                         )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        // Bouton d'action pour réclamer le bonus via vidéo publicitaire
-                        Button(
-                            onClick = onClaimBonus,
-                            enabled = !isClaimed,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(40.dp)
-                                .testTag("btn_claim_${sponsor.id}"),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isClaimed) Color(0xFF1E293B) else EmeraldPrimary,
-                                contentColor = if (isClaimed) TextMuted else Color.Black,
-                                disabledContainerColor = Color(0xFF1E293B),
-                                disabledContentColor = TextMuted
-                            )
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = if (isClaimed) Icons.Default.CheckCircle else Icons.Default.PlayCircle,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = if (isClaimed) "BONUS DÉJÀ RÉCLAMÉ ✓" else "ACTIVER LE BONUS (PUB VIDÉO ADMOB) 🎬",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Black
-                                )
-                            }
-                        }
+                        Text(
+                            text = if (state.isDailySpinAvailable) "1 Tour Gratuit 🎁" else "Lancer",
+                            color = if (state.isDailySpinAvailable) Color(0xFF4ADE80) else Color(0xFF94A3B8),
+                            fontSize = 10.sp
+                        )
                     }
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+
     }
 }

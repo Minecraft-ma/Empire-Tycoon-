@@ -10,6 +10,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +44,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
@@ -114,6 +117,7 @@ fun TopStatsBar(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
+                        .weight(1f, fill = false)
                         .clip(RoundedCornerShape(12.dp))
                         .clickable { onOpenProfile() }
                         .padding(vertical = 2.dp)
@@ -137,7 +141,7 @@ fun TopStatsBar(
 
                     Spacer(modifier = Modifier.width(10.dp))
 
-                    Column {
+                    Column(modifier = Modifier.weight(1f, fill = false)) {
                         Text(
                             text = if (state.prestigeLevel > 0) "★ P${state.prestigeLevel} • ${state.playerName.uppercase()}" else "${currentRank.badgeEmoji} ${state.playerName.uppercase()}",
                             color = AmberDark,
@@ -145,18 +149,20 @@ fun TopStatsBar(
                             fontWeight = FontWeight.Black,
                             letterSpacing = 0.5.sp,
                             maxLines = 1,
-                            softWrap = false
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = MoneyFormatter.format(state.cash),
                             color = Color.White,
-                            fontSize = 22.sp,
+                            fontSize = 19.sp,
                             fontWeight = FontWeight.Black,
                             maxLines = 1,
-                            softWrap = false
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.width(8.dp))
 
                 // Passive Flow Pill
                 Box(
@@ -180,7 +186,7 @@ fun TopStatsBar(
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Black,
                             maxLines = 1,
-                            softWrap = false
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -188,9 +194,11 @@ fun TopStatsBar(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Row 2: Action Pills (Quests, Frenzy, Multiplier) in a neat horizontal row
+            // Row 2: Action Pills (Quests, Frenzy, Multiplier) in a neat horizontal scrollable row
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -254,7 +262,7 @@ fun TopStatsBar(
                         Text(text = "🏆", fontSize = 13.sp)
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "CLASSEMENT (#${state.playerCurrentRank})",
+                            text = "RANG #${state.playerCurrentRank}",
                             color = Color.White,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Black,

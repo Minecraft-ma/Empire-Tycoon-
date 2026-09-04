@@ -502,7 +502,7 @@ fun ProductivityUpgradeItemCard(
 
                     Spacer(modifier = Modifier.width(10.dp))
 
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = upgrade.name,
@@ -524,19 +524,24 @@ fun ProductivityUpgradeItemCard(
                                     color = tagColor,
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Black,
+                                    maxLines = 1,
                                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                                 )
                             }
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Bonus total : +${String.format("%.0f", upgrade.totalBonusPercent)}%",
+                                text = "+${String.format("%.0f", upgrade.totalBonusPercent)}%",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = EmeraldPrimary
+                                color = EmeraldPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.width(6.dp))
 
                 // Level badge
                 Surface(
@@ -549,10 +554,11 @@ fun ProductivityUpgradeItemCard(
                 ) {
                     Text(
                         text = if (upgrade.isMaxed) "MAX" else "Niv. ${upgrade.level}/${upgrade.maxLevel}",
-                        fontSize = 11.sp,
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.Black,
                         color = if (upgrade.isMaxed) EmeraldPrimary else AmberPrimary,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        maxLines = 1,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
                     )
                 }
             }
