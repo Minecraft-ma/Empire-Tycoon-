@@ -1,0 +1,35 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+
+    <!-- Minimalist dark circular base -->
+    <path
+        android:fillColor="#0A1128"
+        android:pathData="M48,48m-44,0a44,44 0,1 1,88 0a44,44 0,1 1,-88 0" />
+
+    <!-- Sleek subtle gold outer accent ring -->
+    <path
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="1.5"
+        android:strokeAlpha="0.4"
+        android:fillColor="#00000000"
+        android:pathData="M48,48m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0" />
+
+    <!-- Pure minimalist geometric crown / letter E monogram in luxury gold -->
+    <!-- Crown peaks -->
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M26,38 L34,50 L48,32 L62,50 L70,38 L68,64 L28,64 Z" />
+
+    <!-- Minimalist crown base bar -->
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M28,66 L68,66 L68,70 L28,70 Z" />
+
+    <!-- Center diamond accent in pure gold -->
+    <path
+        android:fillColor="#FFFBEB"
+        android:pathData="M48,44 L51,48 L48,52 L45,48 Z" />
+</vector>

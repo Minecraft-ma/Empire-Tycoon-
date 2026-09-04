@@ -15,6 +15,9 @@ class EmpireApplication : Application() {
 
         // Initialize Google Mobile Ads SDK with test device configuration
         AdManager.initialize(this)
+
+        // Automatically check for application updates from GitHub Releases
+        com.example.updater.UpdateManager.checkForUpdates(this, isManual = false)
     }
 
     private fun setupWebViewEnvironment(context: Context) {

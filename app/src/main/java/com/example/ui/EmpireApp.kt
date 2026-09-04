@@ -43,6 +43,8 @@ import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.ui.platform.LocalContext
 import com.example.ads.AdManager
+import com.example.updater.UpdateManager
+import com.example.ui.components.UpdateDialog
 import com.example.ui.components.AuctionWarDialog
 import com.example.ui.components.CrisisDialog
 import com.example.ui.components.DailyRewardsAndQuestsDialog
@@ -427,6 +429,15 @@ fun EmpireApp(
                 onBuyoutLot = { viewModel.buyoutAuctionLot(it) },
                 onResetLot = { viewModel.resetAuctionLot(it) },
                 onDismiss = { viewModel.closeAuctionDialog() }
+            )
+        }
+
+        // Automatic In-App Update Dialog
+        val activeUpdateInfo by UpdateManager.activeUpdateInfo.collectAsState()
+        activeUpdateInfo?.let { updateInfo ->
+            UpdateDialog(
+                updateInfo = updateInfo,
+                onDismiss = { UpdateManager.dismissUpdateDialog() }
             )
         }
     }
