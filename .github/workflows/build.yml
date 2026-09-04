@@ -5,6 +5,9 @@ on:
     branches: [ "**" ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -39,10 +42,31 @@ jobs:
           fi
 
       - name: Build Debug APK with Gradle Wrapper
-        run: ./gradlew assembleDebug --stacktrace --no-daemon -Djava.awt.headless=true -Dkotlin.compiler.execution.strategy=daemon -Dksp.incremental=false
+        run: |
+          ./gradlew assembleDebug --stacktrace --no-daemon -Djava.awt.headless=true -Dkotlin.compiler.execution.strategy=daemon -Dksp.incremental=false
+          mkdir -p release-output
+          cp app/build/outputs/apk/debug/*.apk release-output/EmpireTycoon.apk
 
-      - name: Upload APK Artifact
+      - name: Upload APK to GitHub Actions Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: empire-tycoon-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: EmpireTycoon-APK
+          path: release-output/EmpireTycoon.apk
+          if-no-files-found: error
+
+      - name: Publish APK to GitHub Releases (Download direct sur téléphone)
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          gh release delete latest --yes || true
+          git tag -d latest || true
+          git push origin :refs/tags/latest || true
+          gh release create latest release-output/EmpireTycoon.apk \
+            --target "${{ github.sha }}" \
+            --clobber \
+            --title "Empire Tycoon - Dernier APK Jouable" \
+            --notes "Téléchargez et installez directement l'APK **EmpireTycoon.apk** ci-dessous sur votre smartphone Android."
+

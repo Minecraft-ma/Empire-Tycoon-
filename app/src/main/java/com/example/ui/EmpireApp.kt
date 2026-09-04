@@ -60,6 +60,7 @@ import com.example.ui.screens.ActionTappingScreen
 import com.example.ui.screens.AdMonetizationScreen
 import com.example.ui.screens.EmpireBusinessesScreen
 import com.example.ui.screens.ExecutivePrestigeScreen
+import com.example.ui.screens.ModernDashboardScreen
 import com.example.ui.screens.TradingMarketScreen
 import com.example.ui.theme.AmberDark
 import com.example.ui.theme.AmberPrimary
@@ -170,10 +171,10 @@ fun EmpireApp(
                     .testTag("bottom_navigation_bar")
             ) {
                 val tabs = listOf(
-                    Triple(0, "Action", Icons.Default.FlashOn),
+                    Triple(0, "Dashboard", Icons.Default.FlashOn),
                     Triple(1, "Empire", Icons.Default.Business),
                     Triple(2, "Bourse", Icons.Default.ShowChart),
-                    Triple(3, "Pubs", Icons.Default.MonetizationOn),
+                    Triple(3, "Sponsors 💰", Icons.Default.MonetizationOn),
                     Triple(4, "Direction", Icons.Default.WorkspacePremium)
                 )
 
@@ -246,7 +247,7 @@ fun EmpireApp(
                     .weight(1f)
             ) {
                 when (state.selectedTab) {
-                    0 -> ActionTappingScreen(
+                    0 -> ModernDashboardScreen(
                         state = state,
                         onTap = { x, y -> viewModel.onTapAction(x, y) },
                         onTriggerRewardedAd = { desc, bonus, action -> handleTriggerAd(desc, bonus, action) },
