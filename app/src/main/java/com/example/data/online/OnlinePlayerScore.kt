@@ -6,6 +6,7 @@ import com.squareup.moshi.JsonClass
 data class OnlinePlayerScore(
     val playerId: String = "",
     val playerName: String = "Joueur",
+    val companyName: String = "Mon Entreprise",
     val countryFlag: String = "🇫🇷",
     val avatarEmoji: String = "💼",
     val netWorth: Double = 0.0,

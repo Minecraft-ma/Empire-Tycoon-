@@ -19,11 +19,6 @@
         android:hardwareAccelerated="true"
         android:theme="@style/Theme.MyApplication">
 
-        <!-- Google AdMob Application ID -->
-        <meta-data
-            android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-9856111598579327~6580859360" />
-
         <!-- Firebase Analytics Configuration -->
         <meta-data
             android:name="firebase_analytics_collection_enabled"

@@ -11,6 +11,7 @@ import com.example.model.DailyMilestoneChest
 import com.example.model.DailyMission
 import com.example.model.Executive
 import com.example.model.OfflineEarningsReport
+import com.example.model.SponsorshipContract
 import com.example.model.StockItem
 import org.json.JSONArray
 import org.json.JSONObject
@@ -47,11 +48,14 @@ object GameSaveManager {
         wonAuctionLotIds: Set<String> = emptySet(),
         takeoverStakes: Map<String, Int> = emptyMap(),
         unlockedTechIds: Set<String> = emptySet(),
-        purchasedLuxuryIds: Set<String> = emptySet()
+        purchasedLuxuryIds: Set<String> = emptySet(),
+        companyName: String = "Mon Entreprise",
+        sponsorshipContracts: List<SponsorshipContract> = emptyList()
     ): String {
         val root = JSONObject()
-        root.put("version", 4)
+        root.put("version", 5)
         root.put("playerName", playerName)
+        root.put("companyName", companyName)
         root.put("selectedAvatarId", selectedAvatarId)
         root.put("soundEnabled", soundEnabled)
         root.put("hapticsEnabled", hapticsEnabled)
@@ -60,6 +64,18 @@ object GameSaveManager {
         root.put("prestigeLevel", prestigeLevel)
         root.put("prestigeBonusMultiplier", prestigeBonusMultiplier)
         root.put("lastWheelSpinTimestampEpoch", lastWheelSpinTimestampEpoch)
+
+        // Expansion: Sponsorship Contracts
+        val sponsorArray = JSONArray()
+        sponsorshipContracts.forEach { s ->
+            val obj = JSONObject()
+            obj.put("id", s.id)
+            obj.put("isSigned", s.isSigned)
+            obj.put("timeRemaining", s.timeRemainingSeconds)
+            obj.put("totalEarned", s.totalEarningsAccumulated)
+            sponsorArray.put(obj)
+        }
+        root.put("sponsorshipContracts", sponsorArray)
 
         // Expansion: Auctions won
         val aucArray = JSONArray()
@@ -137,6 +153,7 @@ object GameSaveManager {
             val obj = JSONObject()
             obj.put("id", a.id)
             obj.put("isUnlocked", a.isUnlocked)
+            obj.put("level", a.level)
             adArray.put(obj)
         }
         root.put("adNetworks", adArray)
@@ -250,7 +267,8 @@ object GameSaveManager {
     private fun parseJsonSave(jsonString: String): GameLoadResult? {
         return try {
             val root = JSONObject(jsonString)
-            val playerName = root.optString("playerName", "Milliardaire Anonyme")
+            val playerName = root.optString("playerName", "Player234")
+            val companyName = root.optString("companyName", "Mon Entreprise")
             val selectedAvatarId = root.optInt("selectedAvatarId", 0)
             val soundEnabled = root.optBoolean("soundEnabled", true)
             val hapticsEnabled = root.optBoolean("hapticsEnabled", true)
@@ -306,13 +324,17 @@ object GameSaveManager {
 
             // Ad map
             val adUnlockedSet = mutableSetOf<String>()
+            val adLevelsMap = mutableMapOf<String, Int>()
             val adArray = root.optJSONArray("adNetworks")
             if (adArray != null) {
                 for (i in 0 until adArray.length()) {
                     val obj = adArray.getJSONObject(i)
+                    val id = obj.getString("id")
                     if (obj.optBoolean("isUnlocked", false)) {
-                        adUnlockedSet.add(obj.getString("id"))
+                        adUnlockedSet.add(id)
                     }
+                    val lvl = obj.optInt("level", 1)
+                    adLevelsMap[id] = lvl
                 }
             }
 
@@ -418,6 +440,20 @@ object GameSaveManager {
                 }
             }
 
+            // Sponsorship Contracts map: id -> Triple(isSigned, timeRemaining, totalEarned)
+            val sponsorshipSavedData = mutableMapOf<String, Triple<Boolean, Int, Double>>()
+            val sponsorArray = root.optJSONArray("sponsorshipContracts")
+            if (sponsorArray != null) {
+                for (i in 0 until sponsorArray.length()) {
+                    val obj = sponsorArray.getJSONObject(i)
+                    sponsorshipSavedData[obj.getString("id")] = Triple(
+                        obj.optBoolean("isSigned", false),
+                        obj.optInt("timeRemaining", 0),
+                        obj.optDouble("totalEarned", 0.0)
+                    )
+                }
+            }
+
             // Career Stats
             val statsObj = root.optJSONObject("careerStats")
             val careerStats = if (statsObj != null) {
@@ -462,7 +498,10 @@ object GameSaveManager {
                 wonAuctionLotIds = wonAuctionLotIds,
                 takeoverStakes = takeoverStakes,
                 unlockedTechIds = unlockedTechIds,
-                purchasedLuxuryIds = purchasedLuxuryIds
+                purchasedLuxuryIds = purchasedLuxuryIds,
+                companyName = companyName,
+                adLevels = adLevelsMap,
+                sponsorshipSavedData = sponsorshipSavedData
             )
         } catch (e: Exception) {
             null
@@ -497,6 +536,9 @@ data class GameLoadResult(
     val wonAuctionLotIds: Set<String> = emptySet(),
     val takeoverStakes: Map<String, Int> = emptyMap(),
     val unlockedTechIds: Set<String> = emptySet(),
-    val purchasedLuxuryIds: Set<String> = emptySet()
+    val purchasedLuxuryIds: Set<String> = emptySet(),
+    val companyName: String = "Mon Entreprise",
+    val adLevels: Map<String, Int> = emptyMap(),
+    val sponsorshipSavedData: Map<String, Triple<Boolean, Int, Double>> = emptyMap()
 )
 

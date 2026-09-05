@@ -151,7 +151,7 @@ data class Business(
             "tech" -> Icons.Default.LaptopMac
             "media" -> Icons.Default.Movie
             "quantum" -> Icons.Default.Memory
-            "space" -> Icons.Default.RocketLaunch
+            "space", "rocket" -> Icons.Default.RocketLaunch
             "casino" -> Icons.Default.Casino
             else -> Icons.Default.Business
         }
@@ -164,6 +164,47 @@ enum class MiniGameType {
     CRYPTO_FAST_PUMP,
     LUCKY_VIP_SPIN,
     VIRAL_AD_CAMPAIGN
+}
+
+enum class SponsorshipTier(val title: String, val badge: String, val colorHex: Long) {
+    BRONZE("Partenaire Local", "BRONZE", 0xFFCD7F32),
+    SILVER("Sponsor Régional", "SILVER", 0xFFC0C0C0),
+    GOLD("Corporation Nationale", "GOLD", 0xFFFFD700),
+    PLATINUM("Multinationale Globale", "PLATINUM", 0xFF00E5FF),
+    DIAMOND("Conglomérat Spatial", "DIAMOND", 0xFFE040FB)
+}
+
+data class SponsorshipContract(
+    val id: String,
+    val sponsorName: String,
+    val sponsorCategory: String,
+    val tier: SponsorshipTier,
+    val logoEmoji: String,
+    val description: String,
+    val durationSeconds: Int, // Total duration of the deal
+    val timeRemainingSeconds: Int = 0, // Current active countdown
+    val requiredNetWorth: Double = 0.0,
+    val signingBonus: Double = 0.0,
+    val passiveIncomeMultiplier: Double = 0.15, // +15% passive income boost while active
+    val directPayoutPerSec: Double = 0.0, // Additional fixed cash per second
+    val isSigned: Boolean = false,
+    val isCompleted: Boolean = false,
+    val totalEarningsAccumulated: Double = 0.0
+) {
+    val isActive: Boolean
+        get() = isSigned && timeRemainingSeconds > 0 && !isCompleted
+
+    val progressFraction: Float
+        get() = if (durationSeconds > 0) {
+            1f - (timeRemainingSeconds.toFloat() / durationSeconds.toFloat()).coerceIn(0f, 1f)
+        } else 0f
+
+    val formattedTimeRemaining: String
+        get() {
+            val mins = timeRemainingSeconds / 60
+            val secs = timeRemainingSeconds % 60
+            return String.format("%02d:%02d", mins, secs)
+        }
 }
 
 data class SponsorOffer(
@@ -226,8 +267,26 @@ data class AdNetworkTier(
     val unlockCost: Double,
     val isUnlocked: Boolean = false,
     val description: String,
-    val autoAdIncomePerSec: Double = 0.0
-)
+    val autoAdIncomePerSec: Double = 0.0,
+    val level: Int = 1,
+    val audienceReach: Long = 1000L,
+    val upgradeCost: Double = 250.0,
+    val iconEmoji: String = "📡",
+    val channelType: String = "DIGITAL",
+    val clickBonusMultiplier: Double = 0.05
+) {
+    val currentRevenuePerSec: Double
+        get() {
+            if (!isUnlocked) return 0.0
+            return autoAdIncomePerSec * level * (1.0 + (level / 10.0))
+        }
+
+    val nextUpgradeCost: Double
+        get() = upgradeCost * Math.pow(1.35, (level - 1).toDouble())
+
+    val currentReach: Long
+        get() = audienceReach * level.toLong()
+}
 
 data class FloatingCoin(
     val id: Long,

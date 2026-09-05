@@ -34,6 +34,8 @@ import com.example.model.PlayerAvatar
 import com.example.model.PlayerRank
 import com.example.model.ProductivityUpgrade
 import com.example.model.SponsorOffer
+import com.example.model.SponsorshipContract
+import com.example.model.SponsorshipTier
 import com.example.model.StockItem
 import com.example.model.TechBranch
 import com.example.model.TechEffectType
@@ -131,8 +133,16 @@ data class GameUiState(
     val isOnlineSyncing: Boolean = false,
     val isBatterySaverEnabled: Boolean = false,
     val isSettingsDialogOpen: Boolean = false,
+    val isAccountSetupDialogOpen: Boolean = false,
+    val companyName: String = "Mon Entreprise",
+    val countryFlag: String = "🇫🇷",
+    val avatarEmoji: String = "💼",
+    val isAccountCreated: Boolean = false,
     val activeSessionId: String? = null,
-    val lastWheelSpinTimestampEpoch: Long = 0L
+    val lastWheelSpinTimestampEpoch: Long = 0L,
+    val sponsorshipContracts: List<SponsorshipContract> = GameRepository.getDefaultSponsorshipContracts(),
+    val isSponsorshipDialogOpen: Boolean = false,
+    val selectedSponsorshipContractId: String? = null
 ) {
     val isDailySpinAvailable: Boolean
         get() {
@@ -202,8 +212,8 @@ data class GameUiState(
                 1.0 + (frenzyUpg * 0.30)
             } else 1.0
             val frenzyMult = (if (isFrenzyActive) 10.0 else 1.0) * frenzyUpgradeExtra
-            val adMult = if (isAdBoostActive) 2.0 else 1.0
-            return base * frenzyMult * globalMultiplier * prestigeBonusMultiplier * adMult
+            val adClickBoost = 1.0 + adNetworks.filter { it.isUnlocked }.sumOf { it.clickBonusMultiplier * it.level }
+            return base * frenzyMult * globalMultiplier * prestigeBonusMultiplier * adClickBoost
         }
 
     val totalPassiveRevenuePerSec: Double
@@ -216,7 +226,7 @@ data class GameUiState(
             }
             for (ad in adNetworks) {
                 if (ad.isUnlocked) {
-                    sum += ad.autoAdIncomePerSec
+                    sum += ad.currentRevenuePerSec
                 }
             }
             // Takeover passive income
@@ -235,8 +245,15 @@ data class GameUiState(
                     sum += lux.effectiveRentRevenuePerSec
                 }
             }
+            // Active Sponsorship Direct Cash Payouts
+            for (contract in sponsorshipContracts) {
+                if (contract.isActive) {
+                    sum += contract.directPayoutPerSec
+                }
+            }
 
             val executiveBoost = executives.filter { it.hired }.sumOf { it.passiveRevenueBoost }
+            val sponsorshipMultiplierBoost = sponsorshipContracts.filter { it.isActive }.sumOf { it.passiveIncomeMultiplier }
             var techBoost = 0.0
             if (techUpgrades.any { it.id == "tech_quantum_ai" && it.isUnlocked }) techBoost += 0.30
             if (techUpgrades.any { it.id == "tech_crypto_miner" && it.isUnlocked }) techBoost += 0.50
@@ -250,7 +267,7 @@ data class GameUiState(
             val upgradePassiveMult = 1.0 + productivityUpgrades
                 .filter { it.category == UpgradeCategory.PASSIVE_BUSINESS }
                 .sumOf { it.level * it.multiplierPerLevel }
-            val netMultiplier = (1.0 + executiveBoost + techBoost + expandedTechBoost + luxuryPassiveBoost + auctionMultiplierBoost + megaBoost) * upgradePassiveMult * prestigeBonusMultiplier * globalMultiplier * (if (isFrenzyActive) 5.0 else 1.0)
+            val netMultiplier = (1.0 + executiveBoost + sponsorshipMultiplierBoost + techBoost + expandedTechBoost + luxuryPassiveBoost + auctionMultiplierBoost + megaBoost) * upgradePassiveMult * prestigeBonusMultiplier * globalMultiplier * (if (isFrenzyActive) 5.0 else 1.0)
             return sum * netMultiplier
         }
 
@@ -359,7 +376,9 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
             }
 
             val updatedAds = GameRepository.getDefaultAdNetworks().map { def ->
-                def.copy(isUnlocked = saved.unlockedAdIds.contains(def.id) || def.id == "ad_banner_basic")
+                val isUnl = saved.unlockedAdIds.contains(def.id) || def.id == "ad_banner_basic"
+                val lvl = saved.adLevels[def.id] ?: 1
+                def.copy(isUnlocked = isUnl, level = lvl)
             }
 
             val updatedAchievements = GameRepository.getDefaultAchievements().map { def ->
@@ -395,6 +414,21 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
 
             val updatedLuxury = GameRepository.getDefaultLuxuryAssets().map { def ->
                 def.copy(isPurchased = saved.purchasedLuxuryIds.contains(def.id))
+            }
+
+            val updatedSponsorships = GameRepository.getDefaultSponsorshipContracts().map { def ->
+                val savedData = saved.sponsorshipSavedData[def.id]
+                if (savedData != null) {
+                    val isSigned = savedData.first
+                    val timeRem = savedData.second
+                    val totalEarned = savedData.third
+                    def.copy(
+                        isSigned = isSigned,
+                        timeRemainingSeconds = timeRem,
+                        totalEarningsAccumulated = totalEarned,
+                        isCompleted = isSigned && timeRem == 0
+                    )
+                } else def
             }
 
             // Restore daily missions if same day epoch, or generate fresh set
@@ -449,9 +483,18 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
             val sanitizedTotal = if (rawTotal.isNaN() || rawTotal.isInfinite() || rawTotal > 1e18 || rawTotal < 0.0) sanitizedCash else rawTotal
             val sanitizedPrestigeMult = if (saved.prestigeBonusMultiplier.isNaN() || saved.prestigeBonusMultiplier.isInfinite() || saved.prestigeBonusMultiplier > 100.0) 1.0 + (saved.prestigeLevel * 0.20) else saved.prestigeBonusMultiplier
 
+            val savedCompany = onlineLeaderboardService.getSavedCompanyName().ifBlank { saved.companyName }
+            val savedFlag = onlineLeaderboardService.getSavedCountryFlag()
+            val savedAvatar = onlineLeaderboardService.getSavedAvatarEmoji()
+            val isAccCreated = onlineLeaderboardService.isAccountCreated()
+
             _uiState.update {
                 it.copy(
                     playerName = saved.playerName,
+                    companyName = savedCompany,
+                    countryFlag = savedFlag,
+                    avatarEmoji = savedAvatar,
+                    isAccountCreated = isAccCreated,
                     selectedAvatarId = saved.selectedAvatarId,
                     soundEnabled = saved.soundEnabled,
                     hapticsEnabled = saved.hapticsEnabled,
@@ -477,7 +520,8 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
                     dailyStreakDays = streak,
                     lastMissionDayEpoch = currentEpochDay,
                     dailyCashEarned = if (isSameDay) saved.dailyCashEarned else 0.0,
-                    lastWheelSpinTimestampEpoch = saved.lastWheelSpinTimestampEpoch
+                    lastWheelSpinTimestampEpoch = saved.lastWheelSpinTimestampEpoch,
+                    sponsorshipContracts = updatedSponsorships
                 )
             }
             SoundManager.isSoundEnabled = saved.soundEnabled
@@ -555,7 +599,9 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
             wonAuctionLotIds = state.auctionLots.filter { it.isWonByPlayer }.map { it.id }.toSet(),
             takeoverStakes = state.corporateTakeovers.associate { it.id to it.ownedStakePercentage },
             unlockedTechIds = state.expandedTechNodes.filter { it.isUnlocked }.map { it.id }.toSet(),
-            purchasedLuxuryIds = state.luxuryAssets.filter { it.isPurchased }.map { it.id }.toSet()
+            purchasedLuxuryIds = state.luxuryAssets.filter { it.isPurchased }.map { it.id }.toSet(),
+            companyName = state.companyName,
+            sponsorshipContracts = state.sponsorshipContracts
         )
 
         // Asynchronously persist currency and upgrade status to DataStore
@@ -750,6 +796,32 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
                             showFeedback(auctionWonMessage!!)
                         }
 
+                        // Update sponsorship contracts countdown and auto-completion
+                        var completedContractMessage: String? = null
+                        val updatedSponsorships = current.sponsorshipContracts.map { contract ->
+                            if (contract.isActive) {
+                                val nextTime = max(0, contract.timeRemainingSeconds - 1)
+                                if (nextTime == 0) {
+                                    completedContractMessage = "🤝 Contrat de Sponsoring terminé : '${contract.sponsorName}' a expiré. Vous pouvez le renouveler !"
+                                    contract.copy(
+                                        timeRemainingSeconds = 0,
+                                        isCompleted = true,
+                                        totalEarningsAccumulated = contract.totalEarningsAccumulated + contract.directPayoutPerSec
+                                    )
+                                } else {
+                                    contract.copy(
+                                        timeRemainingSeconds = nextTime,
+                                        totalEarningsAccumulated = contract.totalEarningsAccumulated + contract.directPayoutPerSec
+                                    )
+                                }
+                            } else contract
+                        }
+
+                        if (completedContractMessage != null) {
+                            triggerHapticFeedback(isStrong = false)
+                            showFeedback(completedContractMessage!!)
+                        }
+
                         current.copy(
                             crisisTimeRemainingSec = newCrisisTime,
                             activeCrisis = newCrisis,
@@ -759,6 +831,7 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
                             isAutoTapperActive = stillAutoActive,
                             adBoostTimeRemainingSec = newAdBoostTime,
                             auctionLots = updatedAuctionLots,
+                            sponsorshipContracts = updatedSponsorships,
                             careerStats = updatedStats,
                             timeUntilDailyResetFormatted = countdownFormatted,
                             lastMissionDayEpoch = if (current.lastMissionDayEpoch == 0L) currentEpochDay else current.lastMissionDayEpoch
@@ -1202,14 +1275,64 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
                 it.copy(
                     cash = it.cash - net.unlockCost,
                     adNetworks = updated,
-                    feedbackMessage = "Régie publicitaire débloquée : ${net.name} !"
+                    feedbackMessage = "Canal publicitaire débloqué : ${net.name} !"
                 )
             }
             saveCurrentGameState()
             checkAchievements()
         } else {
-            showFeedback("Fonds insuffisants pour déployer cette régie")
+            showFeedback("Fonds insuffisants pour déployer ce canal")
         }
+    }
+
+    fun upgradeAdNetwork(networkId: String) {
+        val state = _uiState.value
+        val net = state.adNetworks.find { it.id == networkId } ?: return
+        if (!net.isUnlocked) return
+
+        val cost = net.nextUpgradeCost
+        if (state.cash >= cost) {
+            triggerHapticFeedback(isStrong = false)
+            val updated = state.adNetworks.map {
+                if (it.id == net.id) it.copy(level = it.level + 1) else it
+            }
+            _uiState.update {
+                it.copy(
+                    cash = it.cash - cost,
+                    adNetworks = updated,
+                    feedbackMessage = "Campagne ${net.name} améliorée au Niveau ${net.level + 1} !"
+                )
+            }
+            saveCurrentGameState()
+            checkAchievements()
+        } else {
+            showFeedback("Fonds insuffisants pour améliorer cette campagne publicitaire")
+        }
+    }
+
+    fun launchCompanyAdCampaign(networkId: String) {
+        val state = _uiState.value
+        val net = state.adNetworks.find { it.id == networkId } ?: return
+        if (!net.isUnlocked) return
+
+        // 30 minutes simulation = 1800 seconds of passive revenue from this network
+        val yield30Min = net.currentRevenuePerSec * 1800.0
+        val totalYield = yield30Min.coerceAtLeast(1000.0 * net.level)
+
+        triggerHapticFeedback(isStrong = true)
+        _uiState.update {
+            it.copy(
+                cash = it.cash + totalYield,
+                totalCashEarned = it.totalCashEarned + totalYield,
+                dailyCashEarned = it.dailyCashEarned + totalYield,
+                totalAdRevenueEarned = it.totalAdRevenueEarned + totalYield,
+                adImpressionsCount = it.adImpressionsCount + net.currentReach,
+                feedbackMessage = "Campagne ${net.name} lancée ! Bilan après 30 min : +${MoneyFormatter.format(totalYield)} générés !"
+            )
+        }
+        trackDailyMission(DailyMissionType.WATCH_ADMOB_AD, 1L)
+        saveCurrentGameState()
+        checkAchievements()
     }
 
     fun openActiveSponsorMiniGame() {
@@ -1494,7 +1617,7 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
                         totalAdRevenueEarned = it.totalAdRevenueEarned + totalGained,
                         adImpressionsCount = newImpressions,
                         isSimulatedAdOpen = false,
-                        feedbackMessage = "Pub Réelle AdMob validée ! Frenzy x10 (+${frenzySec}s) & Multiplicateur x2.5 cumulé (+${addedMultTime / 3600}h) !"
+                        feedbackMessage = "Campagne Sponsor validée ! Frenzy x10 (+${frenzySec}s) & Multiplicateur x2.5 cumulé (+${addedMultTime / 3600}h) !"
                     )
                 }
             }
@@ -1511,7 +1634,7 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
                         totalAdRevenueEarned = it.totalAdRevenueEarned + totalGained,
                         adImpressionsCount = newImpressions,
                         isSimulatedAdOpen = false,
-                        feedbackMessage = "Pub Réelle AdMob validée ! +${MoneyFormatter.format(totalGained)} & Boost x2.0 cumulé (+${addedSec / 3600}h) !"
+                        feedbackMessage = "Campagne Sponsor validée ! +${MoneyFormatter.format(totalGained)} & Boost x2.0 cumulé (+${addedSec / 3600}h) !"
                     )
                 }
             }
@@ -1528,7 +1651,7 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
                         totalAdRevenueEarned = it.totalAdRevenueEarned + totalGained,
                         adImpressionsCount = newImpressions,
                         isSimulatedAdOpen = false,
-                        feedbackMessage = "Pub Réelle AdMob validée ! Boost Global x2.0 Cumulé (+${addedSec / 3600}h, Total: ${accumulatedTime / 3600}h) & +${MoneyFormatter.format(totalGained)} !"
+                        feedbackMessage = "Campagne Sponsor validée ! Boost Global x2.0 Cumulé (+${addedSec / 3600}h, Total: ${accumulatedTime / 3600}h) & +${MoneyFormatter.format(totalGained)} !"
                     )
                 }
             }
@@ -2204,16 +2327,49 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    fun openAccountSetupDialog() {
+        _uiState.update { it.copy(isAccountSetupDialogOpen = true) }
+        SoundManager.playTap()
+    }
+
+    fun closeAccountSetupDialog() {
+        _uiState.update { it.copy(isAccountSetupDialogOpen = false) }
+        SoundManager.playTap()
+    }
+
+    fun savePlayerAccount(name: String, company: String, flag: String, avatar: String) {
+        val cleanName = name.trim().ifBlank { "Player234" }
+        val cleanCompany = company.trim().ifBlank { "Mon Entreprise" }
+        val cleanFlag = flag.trim().ifBlank { "🇫🇷" }
+        val cleanAvatar = avatar.trim().ifBlank { "💼" }
+
+        onlineLeaderboardService.saveAccount(cleanName, cleanCompany, cleanFlag, cleanAvatar)
+        _uiState.update {
+            it.copy(
+                playerName = cleanName,
+                companyName = cleanCompany,
+                countryFlag = cleanFlag,
+                avatarEmoji = cleanAvatar,
+                isAccountCreated = true,
+                isAccountSetupDialogOpen = false
+            )
+        }
+        triggerHapticFeedback(isStrong = true)
+        showFeedback("🏢 Compte Dirigeant & Entreprise enregistrés !")
+        publishMyScoreToOnlineLeaderboard()
+        saveCurrentGameState()
+    }
+
     fun publishMyScoreToOnlineLeaderboard() {
         viewModelScope.launch {
             _uiState.update { it.copy(isOnlineSyncing = true) }
             val state = _uiState.value
-            val avatar = GameRepository.getDefaultAvatars().find { it.id == state.selectedAvatarId }?.emoji ?: "💼"
             val onlineScore = OnlinePlayerScore(
                 playerId = onlineLeaderboardService.myPlayerId,
-                playerName = state.playerName.ifBlank { "CEO" },
-                countryFlag = onlineLeaderboardService.getSavedCountryFlag(),
-                avatarEmoji = avatar,
+                playerName = state.playerName.ifBlank { "Player234" },
+                companyName = state.companyName.ifBlank { "Mon Entreprise" },
+                countryFlag = state.countryFlag.ifBlank { "🇫🇷" },
+                avatarEmoji = state.avatarEmoji.ifBlank { "💼" },
                 netWorth = state.totalCashEarned * 1.5 + state.totalPassiveRevenuePerSec * 1000,
                 totalCashEarned = state.totalCashEarned,
                 peakRevenuePerSec = state.totalPassiveRevenuePerSec,
@@ -2233,7 +2389,7 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
                     isOnlineSyncing = false
                 )
             }
-            showFeedback("🌍 Score publié avec succès sur le serveur mondial des vrais joueurs !")
+            showFeedback("🌍 Score publié avec succès sur Firebase Realtime !")
         }
     }
 
@@ -2507,6 +2663,66 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
         SoundManager.playCollectRevenue()
         showFeedback("💰 Propriété '${asset.name}' vendue pour ${MoneyFormatter.format(resale)} !")
         saveCurrentGameState()
+    }
+
+    fun openSponsorshipDialog(contractId: String? = null) {
+        _uiState.update {
+            it.copy(
+                isSponsorshipDialogOpen = true,
+                selectedSponsorshipContractId = contractId
+            )
+        }
+    }
+
+    fun closeSponsorshipDialog() {
+        _uiState.update {
+            it.copy(
+                isSponsorshipDialogOpen = false,
+                selectedSponsorshipContractId = null
+            )
+        }
+    }
+
+    fun signSponsorshipContract(contractId: String) {
+        val state = _uiState.value
+        val contract = state.sponsorshipContracts.find { it.id == contractId } ?: return
+
+        if (contract.isActive) {
+            showFeedback("⚠️ Ce contrat de sponsoring est déjà en cours d'exécution !")
+            return
+        }
+
+        if (state.netWorth < contract.requiredNetWorth) {
+            showFeedback("Valeur nette insuffisante : ${MoneyFormatter.format(contract.requiredNetWorth)} requis !")
+            return
+        }
+
+        val updatedSponsorships = state.sponsorshipContracts.map {
+            if (it.id == contractId) {
+                it.copy(
+                    isSigned = true,
+                    isCompleted = false,
+                    timeRemainingSeconds = it.durationSeconds
+                )
+            } else it
+        }
+
+        _uiState.update {
+            it.copy(
+                cash = it.cash + contract.signingBonus,
+                totalCashEarned = it.totalCashEarned + contract.signingBonus,
+                sponsorshipContracts = updatedSponsorships
+            )
+        }
+
+        triggerHapticFeedback(isStrong = true)
+        SoundManager.playCollectRevenue()
+        showFeedback("🤝 Contrat signé avec '${contract.sponsorName}' ! +${MoneyFormatter.format(contract.signingBonus)} de prime reçue (+${(contract.passiveIncomeMultiplier * 100).toInt()}% passif) !")
+        saveCurrentGameState()
+    }
+
+    fun renewSponsorshipContract(contractId: String) {
+        signSponsorshipContract(contractId)
     }
 
     fun showFeedback(msg: String) {

@@ -17,6 +17,8 @@ import com.example.model.MoneyFormatter
 import com.example.model.PlayerAvatar
 import com.example.model.RivalBidder
 import com.example.model.SponsorOffer
+import com.example.model.SponsorshipContract
+import com.example.model.SponsorshipTier
 import com.example.model.StockItem
 import com.example.R
 import com.example.model.TechBranch
@@ -563,39 +565,93 @@ object GameRepository {
     fun getDefaultAdNetworks(): List<AdNetworkTier> = listOf(
         AdNetworkTier(
             id = "ad_banner_basic",
-            name = "Sponsoring Bannières Corporatives",
+            name = "Bannières Corporatives & Affichage Web",
             cpmRate = 4.5,
             unlockCost = 50.0,
             isUnlocked = true,
-            description = "Diffuse des bannières interactives élégantes sur les applications de nos filiales.",
-            autoAdIncomePerSec = 2.0
+            description = "Diffuse des bannières élégantes sur tous les sites web et applications de nos filiales.",
+            autoAdIncomePerSec = 4.0,
+            level = 1,
+            audienceReach = 1500L,
+            upgradeCost = 120.0,
+            iconEmoji = "🌐",
+            channelType = "Web & Mobile",
+            clickBonusMultiplier = 0.05
+        ),
+        AdNetworkTier(
+            id = "ad_social_influencer",
+            name = "Campagnes Influenceurs & Réseaux Sociaux",
+            cpmRate = 14.0,
+            unlockCost = 450.0,
+            isUnlocked = false,
+            description = "Partenariats de contenu sponsorisé avec des créateurs viraux pour promouvoir nos marques.",
+            autoAdIncomePerSec = 22.0,
+            level = 1,
+            audienceReach = 12000L,
+            upgradeCost = 750.0,
+            iconEmoji = "📱",
+            channelType = "Médias Sociaux",
+            clickBonusMultiplier = 0.10
         ),
         AdNetworkTier(
             id = "ad_reward_video",
-            name = "Campagnes Vidéos Institutionnelles",
-            cpmRate = 28.0,
-            unlockCost = 1_200.0,
+            name = "Spots Vidéos Institutionnels & Streaming",
+            cpmRate = 32.0,
+            unlockCost = 2_500.0,
             isUnlocked = false,
-            description = "Intègre des spots promotionnels à haute valeur ajoutée offrant des primes d'engagement.",
-            autoAdIncomePerSec = 35.0
+            description = "Spots publicitaires premium diffusés sur les plateformes de streaming et vidéos à la demande.",
+            autoAdIncomePerSec = 110.0,
+            level = 1,
+            audienceReach = 85000L,
+            upgradeCost = 3_800.0,
+            iconEmoji = "📺",
+            channelType = "TV & Streaming",
+            clickBonusMultiplier = 0.15
         ),
         AdNetworkTier(
             id = "ad_interactive_3d",
-            name = "Partenariats Événementiels 3D",
+            name = "Panneaux Géants 3D à Time Square",
             cpmRate = 120.0,
-            unlockCost = 30_000.0,
+            unlockCost = 35_000.0,
             isUnlocked = false,
-            description = "Commandite des démonstrations et simulations interactives lors de sommets financiers.",
-            autoAdIncomePerSec = 580.0
+            description = "Écrans holographiques monumentaux et affichage géant dans les plus grandes métropoles mondiales.",
+            autoAdIncomePerSec = 750.0,
+            level = 1,
+            audienceReach = 500000L,
+            upgradeCost = 55_000.0,
+            iconEmoji = "🏙️",
+            channelType = "Affichage Urbain",
+            clickBonusMultiplier = 0.25
         ),
         AdNetworkTier(
             id = "ad_ai_hyper_target",
-            name = "Consortium IA de Sponsoring Prédictif",
-            cpmRate = 750.0,
-            unlockCost = 650_000.0,
+            name = "Consortium IA de Ciblage Prédictif",
+            cpmRate = 480.0,
+            unlockCost = 450_000.0,
             isUnlocked = false,
-            description = "Ciblage algorithmique en temps réel maximisant les retours sur investissement de nos mécènes.",
-            autoAdIncomePerSec = 8_900.0
+            description = "Algorithmes de ciblage neuronal en temps réel maximisant la conversion et les retours annonceurs.",
+            autoAdIncomePerSec = 5_200.0,
+            level = 1,
+            audienceReach = 4500000L,
+            upgradeCost = 650_000.0,
+            iconEmoji = "🧠",
+            channelType = "IA & Algorithmes",
+            clickBonusMultiplier = 0.40
+        ),
+        AdNetworkTier(
+            id = "ad_space_billboard",
+            name = "Sponsoring Spatial & Constellation Orbitale",
+            cpmRate = 2200.0,
+            unlockCost = 8_000_000.0,
+            isUnlocked = false,
+            description = "Projection orbitale et sponsoring d'engins spatiaux visibles depuis toute la planète.",
+            autoAdIncomePerSec = 65_000.0,
+            level = 1,
+            audienceReach = 80000000L,
+            upgradeCost = 12_000_000.0,
+            iconEmoji = "🛰️",
+            channelType = "Spatial & Global",
+            clickBonusMultiplier = 0.75
         )
     )
 
@@ -659,6 +715,113 @@ object GameRepository {
             miniGameType = MiniGameType.VIRAL_AD_CAMPAIGN,
             badge = "BUZZ VIRAL",
             tagColorHex = 0xFFB388FF
+        )
+    )
+
+    fun getDefaultSponsorshipContracts(): List<SponsorshipContract> = listOf(
+        SponsorshipContract(
+            id = "contract_local_bakery",
+            sponsorName = "Artisan Boulanger & Co",
+            sponsorCategory = "Agroalimentaire Local",
+            tier = SponsorshipTier.BRONZE,
+            logoEmoji = "🥐",
+            description = "Accord de co-branding sur nos points de vente locaux. Verse une prime à la signature et booste vos flux de trésorerie.",
+            durationSeconds = 120, // 2 minutes
+            requiredNetWorth = 0.0,
+            signingBonus = 500.0,
+            passiveIncomeMultiplier = 0.15, // +15%
+            directPayoutPerSec = 5.0
+        ),
+        SponsorshipContract(
+            id = "contract_city_delivery",
+            sponsorName = "SwiftLogistics Express",
+            sponsorCategory = "Transport & Flotte Urbaine",
+            tier = SponsorshipTier.BRONZE,
+            logoEmoji = "🚚",
+            description = "Partenariat d'acheminement prioritaire pour l'ensemble des marchandises et approvisionnements.",
+            durationSeconds = 180, // 3 minutes
+            requiredNetWorth = 2_500.0,
+            signingBonus = 2_000.0,
+            passiveIncomeMultiplier = 0.25, // +25%
+            directPayoutPerSec = 20.0
+        ),
+        SponsorshipContract(
+            id = "contract_regional_energy",
+            sponsorName = "VoltClean Énergies Renouvelables",
+            sponsorCategory = "Énergie & GreenTech",
+            tier = SponsorshipTier.SILVER,
+            logoEmoji = "⚡",
+            description = "Contrat de fourniture électrique verte certifiée réduisant les coûts d'exploitation de nos infrastructures.",
+            durationSeconds = 300, // 5 minutes
+            requiredNetWorth = 15_000.0,
+            signingBonus = 12_000.0,
+            passiveIncomeMultiplier = 0.40, // +40%
+            directPayoutPerSec = 85.0
+        ),
+        SponsorshipContract(
+            id = "contract_fintech_pay",
+            sponsorName = "NéoPay Technologies",
+            sponsorCategory = "Fintech & Terminaux Mobiles",
+            tier = SponsorshipTier.SILVER,
+            logoEmoji = "💳",
+            description = "Intégration exclusive de passerelles de paiement ultra-rapides générant des commissions en continu.",
+            durationSeconds = 420, // 7 minutes
+            requiredNetWorth = 75_000.0,
+            signingBonus = 60_000.0,
+            passiveIncomeMultiplier = 0.60, // +60%
+            directPayoutPerSec = 350.0
+        ),
+        SponsorshipContract(
+            id = "contract_telecom_national",
+            sponsorName = "Apex Mobile Telecom",
+            sponsorCategory = "Télécoms 5G & Fibre",
+            tier = SponsorshipTier.GOLD,
+            logoEmoji = "📡",
+            description = "Sponsoring titre de notre réseau de communication avec diffusion massive de nos marques à l'échelle nationale.",
+            durationSeconds = 600, // 10 minutes
+            requiredNetWorth = 350_000.0,
+            signingBonus = 280_000.0,
+            passiveIncomeMultiplier = 0.85, // +85%
+            directPayoutPerSec = 1_800.0
+        ),
+        SponsorshipContract(
+            id = "contract_luxury_fashion",
+            sponsorName = "Maison de Haute Joaillerie Aurum",
+            sponsorCategory = "Luxe & Haute Couture",
+            tier = SponsorshipTier.GOLD,
+            logoEmoji = "💎",
+            description = "Campagne de prestige mondiale associant nos entreprises au summum du raffinement et de l'élégance.",
+            durationSeconds = 720, // 12 minutes
+            requiredNetWorth = 1_500_000.0,
+            signingBonus = 1_200_000.0,
+            passiveIncomeMultiplier = 1.20, // +120%
+            directPayoutPerSec = 8_500.0
+        ),
+        SponsorshipContract(
+            id = "contract_global_cloud",
+            sponsorName = "QuantumCore Cloud Matrix",
+            sponsorCategory = "IA & Serveurs Hyperscale",
+            tier = SponsorshipTier.PLATINUM,
+            logoEmoji = "🧠",
+            description = "Mise à disposition de supercalculateurs quantiques pour automatiser et maximiser la rentabilité de chaque business.",
+            durationSeconds = 900, // 15 minutes
+            requiredNetWorth = 8_000_000.0,
+            signingBonus = 7_500_000.0,
+            passiveIncomeMultiplier = 1.75, // +175%
+            directPayoutPerSec = 45_000.0
+        ),
+        SponsorshipContract(
+            id = "contract_orbital_defense",
+            sponsorName = "Stellaris Orbital Consortium",
+            sponsorCategory = "Aérospatial & Satellites",
+            tier = SponsorshipTier.DIAMOND,
+            logoEmoji = "🛰️",
+            description = "Mega-deal spatial intercontinental garantissant des redevances orbitales colossales et une visibilité universelle.",
+            durationSeconds = 1200, // 20 minutes
+            requiredNetWorth = 50_000_000.0,
+            signingBonus = 45_000_000.0,
+            passiveIncomeMultiplier = 2.50, // +250%
+            directPayoutPerSec = 280_000.0
         )
     )
 

@@ -119,6 +119,7 @@ fun ModernDashboardScreen(
     onOpenLeaderboard: () -> Unit = {},
     onOpenRealEstateMarket: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
+    onOpenAccountSetup: () -> Unit = {},
     onUpdatePlayerName: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -213,7 +214,7 @@ fun ModernDashboardScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // =========================================================================
-        // 1. TOP HEADER: Avatar + Title "Empire Tycoon" + Leaderboard + Settings
+        // 1. TOP HEADER: Avatar + Player Info (Name & Level) + Leaderboard & Settings
         // =========================================================================
         Row(
             modifier = Modifier
@@ -222,60 +223,54 @@ fun ModernDashboardScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Bouton Avatar Joueur
-            IconButton(
-                onClick = onOpenProfile,
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF131C31))
-                    .border(1.dp, Color(0xFF263550), CircleShape)
-                    .testTag("profile_avatar_button")
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = "Profil Joueur",
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            // Titre Empire Tycoon
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Empire ",
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 0.5.sp
-                )
-                Text(
-                    text = "Tycoon",
-                    color = Color(0xFF4ADE80),
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 0.5.sp
-                )
-            }
-
-            // Boutons d'action droite : Immobilier, Trophée Classement & Paramètres
+            // Profil Joueur (Avatar + Nom + Niveau)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onOpenAccountSetup() }
+                    .padding(4.dp)
+                    .testTag("profile_header_row")
             ) {
-                // Bouton Immobilier & Résidences
-                IconButton(
-                    onClick = onOpenRealEstateMarket,
+                // Avatar rond
+                Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(42.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF131C31))
-                        .border(1.dp, Color(0xFF38BDF8).copy(alpha = 0.5f), CircleShape)
-                        .testTag("real_estate_header_button")
+                        .background(Color(0xFF1E293B))
+                        .border(1.5.dp, Color(0xFF38BDF8), CircleShape),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "🏠", fontSize = 18.sp)
+                    Text(text = state.avatarEmoji.ifBlank { "💼" }, fontSize = 20.sp)
                 }
 
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = if (state.playerName.isNotBlank()) state.playerName else "Player234",
+                            color = Color.White,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(text = state.countryFlag.ifBlank { "🇫🇷" }, fontSize = 12.sp)
+                    }
+                    Text(
+                        text = "Level ${state.clickLevel}",
+                        color = Color(0xFF94A3B8),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            // Boutons d'action droite : Trophée Classement & Paramètres
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 // Trophée Classement Joueurs Réels
                 IconButton(
                     onClick = onOpenLeaderboard,
@@ -289,7 +284,7 @@ fun ModernDashboardScreen(
                     Text(text = "🏆", fontSize = 18.sp)
                 }
 
-                // Paramètres / Profil
+                // Paramètres
                 IconButton(
                     onClick = onOpenSettings,
                     modifier = Modifier
@@ -344,37 +339,33 @@ fun ModernDashboardScreen(
                             )
                         )
                     )
-                    .padding(horizontal = 18.dp, vertical = 16.dp)
+                    .padding(horizontal = 20.dp, vertical = 18.dp)
             ) {
-                // Ligne 1 : Trésorerie Principale
+                // Ligne 1 : VIZA logo + Card number dots
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "💼 TRÉSORERIE DE L'EMPIRE",
-                        color = Color(0xFF38BDF8),
-                        fontSize = 11.sp,
+                        text = "VIZA",
+                        color = Color.White,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Black,
+                        fontStyle = FontStyle.Italic,
                         letterSpacing = 1.sp
                     )
 
-                    Box(
-                        modifier = Modifier
-                            .background(Color(0xFF22C55E).copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                            .padding(horizontal = 8.dp, vertical = 3.dp)
-                    ) {
-                        Text(
-                            text = "🟢 ACTIF",
-                            color = Color(0xFF4ADE80),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    Text(
+                        text = "••••  8256",
+                        color = Color(0xFF94A3B8),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 1.sp
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Ligne 2 : Label Balance + Nom du Joueur avec icône crayon
                 Row(
@@ -393,7 +384,7 @@ fun ModernDashboardScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .clickable { showEditNameDialog = true }
+                            .clickable { onOpenAccountSetup() }
                             .padding(horizontal = 4.dp, vertical = 2.dp)
                     ) {
                         Text(
@@ -405,7 +396,7 @@ fun ModernDashboardScreen(
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
                             imageVector = Icons.Default.Edit,
-                            contentDescription = "Modifier le nom",
+                            contentDescription = "Modifier le compte",
                             tint = Color(0xFF94A3B8),
                             modifier = Modifier.size(13.dp)
                         )
@@ -414,56 +405,38 @@ fun ModernDashboardScreen(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Ligne 3 : Montant Géant du Solde
-                Text(
-                    text = "$ ${String.format("%,.2f", state.cash).replace(',', ' ')}",
-                    color = Color.White,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = (-0.5).sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Ligne 4 : Revenu passif en direct & Date d'expiration
+                // Ligne 3 : Montant Géant du Solde + Date d'expiration
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Bottom
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.TrendingUp,
-                            contentDescription = null,
-                            tint = Color(0xFF4ADE80),
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "+${MoneyFormatter.format(state.totalPassiveRevenuePerSec)}/sec",
-                            color = Color(0xFF4ADE80),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    Text(
+                        text = "$ ${String.format("%,.2f", state.cash).replace(',', ' ')}",
+                        color = Color.White,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = (-0.5).sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
 
                     Text(
                         text = "07/29",
-                        color = Color(0xFF64748B),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold
+                        color = Color(0xFF94A3B8),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         // =========================================================================
-        // 3. CLICK POWER & LEVEL UP BOX (Integrated progress & instant upgrade)
+        // 3. CLICK POWER & LEVEL UP BOX (Exact match with reference image)
         // =========================================================================
+        val upgradeProgress = ((state.cash / state.clickUpgradeCost).toFloat()).coerceIn(0f, 1f)
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -481,9 +454,9 @@ fun ModernDashboardScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(horizontal = 16.dp, vertical = 14.dp)
             ) {
-                // Top Row: Current $/click VS Next Level +$/click
+                // Top Row: Current $/click VS Next Level +$/click & level
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -496,28 +469,29 @@ fun ModernDashboardScreen(
                         fontWeight = FontWeight.Bold
                     )
 
-                    Column(horizontalAlignment = Alignment.End) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
                         Text(
                             text = "+ $ ${String.format("%.2f", state.nextClickPowerGain)} per click",
                             color = Color(0xFF4ADE80),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Black
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
                         )
                         Text(
                             text = "level ${state.clickLevel + 1}",
                             color = Color(0xFF94A3B8),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium
+                            fontSize = 11.sp
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                // Progress Bar vers le prochain niveau
-                val progress = (state.cash / state.clickUpgradeCost).toFloat().coerceIn(0f, 1f)
+                // Barre de progression verte
                 LinearProgressIndicator(
-                    progress = { progress },
+                    progress = { upgradeProgress },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(6.dp)
@@ -526,97 +500,28 @@ fun ModernDashboardScreen(
                     trackColor = Color(0xFF0F172A)
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                // Coût du palier au centre
+                // Montant requis pour l'upgrade aligné à droite (comme sur l'image)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
+                    horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = "$ ${String.format("%,.2f", state.clickUpgradeCost).replace(',', ' ')}",
-                        color = if (state.cash >= state.clickUpgradeCost) Color(0xFF4ADE80) else Color(0xFF94A3B8),
-                        fontSize = 11.sp,
+                        color = if (state.cash >= state.clickUpgradeCost) Color(0xFF4ADE80) else Color.White,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    if (state.cash >= state.clickUpgradeCost) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "• APPUYER POUR AMÉLIORER",
-                            color = Color(0xFF4ADE80),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Black
-                        )
-                    }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(26.dp))
 
         // =========================================================================
-        // 4. AD BOOST BANNER BUTTON (Red / Coral Pill Card from image)
-        // =========================================================================
-        val isAdBoostActive = state.adBoostTimeRemainingSec > 0
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .clickable { onTriggerAdBoost() }
-                .testTag("ad_boost_banner_button"),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = if (isAdBoostActive) Color(0xFFDC2626) else Color(0xFFEF4444)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                // Icône Clapperboard / Video
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color.White.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Movie,
-                        contentDescription = "Ad Video",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Column {
-                    Text(
-                        text = if (isAdBoostActive) "⚡ BOOST x2 ACTIF !" else "$ ${String.format("%.2f", state.cashPerTap * 2)} per click",
-                        color = if (isAdBoostActive) Color.White else Color(0xFF86EFAC),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                    Text(
-                        text = if (isAdBoostActive) "${state.adBoostTimeRemainingSec} secondes restantes" else "for 30 seconds",
-                        color = Color.White.copy(alpha = 0.9f),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // =========================================================================
-        // 5. CONCENTRIC GLOWING RADAR TAP AREA (Dollar + Tap Hand)
+        // 4. CONCENTRIC GLOWING RADAR TAP AREA (Dollar + Tap Hand)
         // =========================================================================
         Box(
             modifier = Modifier
@@ -720,7 +625,7 @@ fun ModernDashboardScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         // Texte indicatif sous le radar
         Text(
@@ -730,101 +635,6 @@ fun ModernDashboardScreen(
             fontWeight = FontWeight.Medium
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // =========================================================================
-        // 6. QUICK ACTIONS: Auto-Tapper IA & Roue de Fortune (Compact, no empty gaps)
-        // =========================================================================
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            // Carte Auto-Tapper
-            Card(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(14.dp))
-                    .clickable { onActivateAutoTapper() }
-                    .testTag("quick_auto_tapper"),
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF131C31)),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    if (state.isAutoTapperActive) Color(0xFFEF4444) else Color(0xFF1E293B)
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.SmartToy,
-                        contentDescription = null,
-                        tint = if (state.isAutoTapperActive) Color(0xFFEF4444) else Color(0xFF38BDF8),
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column {
-                        Text(
-                            text = "Auto-Tapper",
-                            color = Color.White,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = if (state.isAutoTapperActive) "${state.autoTapperTimeRemainingSec}s" else "Activer (30s)",
-                            color = if (state.isAutoTapperActive) Color(0xFFEF4444) else Color(0xFF94A3B8),
-                            fontSize = 10.sp
-                        )
-                    }
-                }
-            }
-
-            // Carte Roue de Fortune
-            Card(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(14.dp))
-                    .clickable { onOpenWheel() }
-                    .testTag("quick_wheel"),
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF131C31)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1E293B))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Casino,
-                        contentDescription = null,
-                        tint = Color(0xFFFBBF24),
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column {
-                        Text(
-                            text = "Roue Fortune",
-                            color = Color.White,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = if (state.isDailySpinAvailable) "1 Tour Gratuit 🎁" else "Lancer",
-                            color = if (state.isDailySpinAvailable) Color(0xFF4ADE80) else Color(0xFF94A3B8),
-                            fontSize = 10.sp
-                        )
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }

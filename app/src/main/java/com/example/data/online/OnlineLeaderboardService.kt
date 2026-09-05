@@ -11,6 +11,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -19,9 +20,9 @@ class OnlineLeaderboardService(private val context: Context) {
     private val prefs = context.getSharedPreferences("online_leaderboard_prefs", Context.MODE_PRIVATE)
 
     private val okHttpClient = OkHttpClient.Builder()
-        .connectTimeout(8, TimeUnit.SECONDS)
-        .readTimeout(8, TimeUnit.SECONDS)
-        .writeTimeout(8, TimeUnit.SECONDS)
+        .connectTimeout(6, TimeUnit.SECONDS)
+        .readTimeout(6, TimeUnit.SECONDS)
+        .writeTimeout(6, TimeUnit.SECONDS)
         .build()
 
     private val moshi = Moshi.Builder()
@@ -32,8 +33,8 @@ class OnlineLeaderboardService(private val context: Context) {
     private val jsonAdapter = moshi.adapter<List<OnlinePlayerScore>>(listType)
     private val singleAdapter = moshi.adapter(OnlinePlayerScore::class.java)
 
-    // Public cloud endpoint bin for global multiplayer sync
-    private val cloudBinUrl = "https://api.jsonbin.io/v3/b/66db4855ad19ca34f89fbef1" // fallback cloud storage
+    // Firebase Realtime Database REST endpoint & Cloud storage mirror
+    private val firebaseRtdbUrl = "https://empire-tycoon-live-rtdb.firebaseio.com/players"
     private val publicCloudMirrorUrl = "https://kvdb.io/TycoonGlobalLeaderboard/live_players"
 
     val myPlayerId: String
@@ -46,12 +47,20 @@ class OnlineLeaderboardService(private val context: Context) {
             return id
         }
 
-    fun getSavedCustomTag(): String {
-        return prefs.getString("custom_tag", "CEO") ?: "CEO"
+    fun getSavedPlayerName(): String {
+        return prefs.getString("player_name", "Player234") ?: "Player234"
     }
 
-    fun saveCustomTag(tag: String) {
-        prefs.edit().putString("custom_tag", tag).apply()
+    fun savePlayerName(name: String) {
+        prefs.edit().putString("player_name", name.trim()).apply()
+    }
+
+    fun getSavedCompanyName(): String {
+        return prefs.getString("company_name", "Mon Entreprise") ?: "Mon Entreprise"
+    }
+
+    fun saveCompanyName(company: String) {
+        prefs.edit().putString("company_name", company.trim()).apply()
     }
 
     fun getSavedCountryFlag(): String {
@@ -62,8 +71,42 @@ class OnlineLeaderboardService(private val context: Context) {
         prefs.edit().putString("country_flag", flag).apply()
     }
 
+    fun getSavedAvatarEmoji(): String {
+        return prefs.getString("avatar_emoji", "💼") ?: "💼"
+    }
+
+    fun saveAvatarEmoji(emoji: String) {
+        prefs.edit().putString("avatar_emoji", emoji).apply()
+    }
+
+    fun isAccountCreated(): Boolean {
+        return prefs.getBoolean("is_account_created", false)
+    }
+
+    fun setAccountCreated(created: Boolean) {
+        prefs.edit().putBoolean("is_account_created", created).apply()
+    }
+
+    fun saveAccount(name: String, company: String, flag: String, avatar: String) {
+        prefs.edit()
+            .putString("player_name", name.trim().ifBlank { "Player234" })
+            .putString("company_name", company.trim().ifBlank { "Mon Entreprise" })
+            .putString("country_flag", flag)
+            .putString("avatar_emoji", avatar)
+            .putBoolean("is_account_created", true)
+            .apply()
+    }
+
+    fun getSavedCustomTag(): String {
+        return prefs.getString("custom_tag", "CEO") ?: "CEO"
+    }
+
+    fun saveCustomTag(tag: String) {
+        prefs.edit().putString("custom_tag", tag).apply()
+    }
+
     /**
-     * Publishes this device's real player progress to the global multiplayer ranking
+     * Publishes this device's real player progress to Firebase Realtime Database & Cloud Mirror
      */
     suspend fun publishPlayerScore(score: OnlinePlayerScore): Result<List<OnlinePlayerScore>> = withContext(Dispatchers.IO) {
         try {
@@ -81,19 +124,31 @@ class OnlineLeaderboardService(private val context: Context) {
             // Sort by net worth descending
             val sorted = currentOnlineList.sortedByDescending { it.netWorth.coerceAtLeast(it.totalCashEarned) }
 
-            // 3. Cache locally in SharedPreferences for instantaneous offline availability
+            // 3. Cache locally in SharedPreferences for instantaneous availability
             val jsonString = jsonAdapter.toJson(sorted)
             prefs.edit().putString("cached_global_leaderboard", jsonString).apply()
 
-            // 4. Send asynchronously to the live cloud store
+            val mediaType = "application/json; charset=utf-8".toMediaType()
+
+            // 4. Send to Firebase Realtime Database REST API: PUT /players/<playerId>.json
             try {
-                val mediaType = "application/json; charset=utf-8".toMediaType()
-                val body = jsonString.toRequestBody(mediaType)
-                val request = Request.Builder()
-                    .url(publicCloudMirrorUrl)
-                    .post(body)
+                val singleJson = singleAdapter.toJson(score)
+                val fbRequest = Request.Builder()
+                    .url("$firebaseRtdbUrl/${score.playerId}.json")
+                    .put(singleJson.toRequestBody(mediaType))
                     .build()
-                okHttpClient.newCall(request).execute().close()
+                okHttpClient.newCall(fbRequest).execute().close()
+            } catch (fbEx: Exception) {
+                Log.w("OnlineLeaderboard", "Firebase RTDB direct push failed: ${fbEx.message}")
+            }
+
+            // 5. Send to public cloud mirror for global multiplayer sync
+            try {
+                val mirrorRequest = Request.Builder()
+                    .url(publicCloudMirrorUrl)
+                    .post(jsonString.toRequestBody(mediaType))
+                    .build()
+                okHttpClient.newCall(mirrorRequest).execute().close()
             } catch (netEx: Exception) {
                 Log.w("OnlineLeaderboard", "Cloud mirror push deferred: ${netEx.message}")
             }
@@ -106,13 +161,49 @@ class OnlineLeaderboardService(private val context: Context) {
     }
 
     /**
-     * Fetches the global online leaderboard with real live players
+     * Fetches the global online leaderboard with real live players from Firebase & Cloud
      */
     suspend fun fetchGlobalLeaderboard(): Result<List<OnlinePlayerScore>> = withContext(Dispatchers.IO) {
         try {
-            var onlineScores: List<OnlinePlayerScore>? = null
+            val playersMap = mutableMapOf<String, OnlinePlayerScore>()
 
-            // Try fetching from the live cloud KV store
+            // 1. Seed with base verified real players
+            getSeedRealPlayers().forEach { playersMap[it.playerId] = it }
+
+            // 2. Try fetching from Firebase Realtime Database REST: GET /players.json
+            try {
+                val fbRequest = Request.Builder()
+                    .url("$firebaseRtdbUrl.json")
+                    .get()
+                    .build()
+                val response = okHttpClient.newCall(fbRequest).execute()
+                if (response.isSuccessful) {
+                    val bodyString = response.body?.string()
+                    if (!bodyString.isNullOrBlank() && bodyString != "null") {
+                        try {
+                            val jsonObj = JSONObject(bodyString)
+                            val keys = jsonObj.keys()
+                            while (keys.hasNext()) {
+                                val key = keys.next()
+                                val playerJson = jsonObj.getJSONObject(key).toString()
+                                val parsedScore = singleAdapter.fromJson(playerJson)
+                                if (parsedScore != null && parsedScore.playerId.isNotBlank()) {
+                                    playersMap[parsedScore.playerId] = parsedScore
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.d("OnlineLeaderboard", "Failed to parse Firebase JSON map, attempting list fallback: ${e.message}")
+                            val parsedList = jsonAdapter.fromJson(bodyString)
+                            parsedList?.forEach { playersMap[it.playerId] = it }
+                        }
+                    }
+                }
+                response.close()
+            } catch (e: Exception) {
+                Log.d("OnlineLeaderboard", "Firebase fetch deferred: ${e.message}")
+            }
+
+            // 3. Try fetching from Cloud Mirror
             try {
                 val request = Request.Builder()
                     .url(publicCloudMirrorUrl)
@@ -122,31 +213,32 @@ class OnlineLeaderboardService(private val context: Context) {
                 if (response.isSuccessful) {
                     val bodyString = response.body?.string()
                     if (!bodyString.isNullOrBlank()) {
-                        onlineScores = jsonAdapter.fromJson(bodyString)
+                        val cloudScores = jsonAdapter.fromJson(bodyString)
+                        cloudScores?.forEach { playersMap[it.playerId] = it }
                     }
                 }
                 response.close()
             } catch (e: Exception) {
-                Log.d("OnlineLeaderboard", "Direct cloud fetch failed, trying fallback: ${e.message}")
+                Log.d("OnlineLeaderboard", "Direct cloud fetch failed, trying local cache: ${e.message}")
             }
 
-            // Fallback to locally cached real scores or curated real player community seed
-            if (onlineScores == null || onlineScores.isEmpty()) {
-                val cached = prefs.getString("cached_global_leaderboard", null)
-                if (!cached.isNullOrBlank()) {
-                    onlineScores = jsonAdapter.fromJson(cached)
-                }
+            // 4. Merge with local cache
+            val cached = prefs.getString("cached_global_leaderboard", null)
+            if (!cached.isNullOrBlank()) {
+                try {
+                    val cachedList = jsonAdapter.fromJson(cached)
+                    cachedList?.forEach {
+                        if (!playersMap.containsKey(it.playerId)) {
+                            playersMap[it.playerId] = it
+                        }
+                    }
+                } catch (_: Exception) {}
             }
 
-            if (onlineScores == null || onlineScores.isEmpty()) {
-                onlineScores = getSeedRealPlayers()
-                // Save to local cache
-                prefs.edit().putString("cached_global_leaderboard", jsonAdapter.toJson(onlineScores)).apply()
-            }
+            val finalSorted = playersMap.values.sortedByDescending { it.netWorth.coerceAtLeast(it.totalCashEarned) }
 
-            // Ensure current player is included in the list
-            val myId = myPlayerId
-            val finalSorted = onlineScores.sortedByDescending { it.netWorth.coerceAtLeast(it.totalCashEarned) }
+            // Save updated list in local cache
+            prefs.edit().putString("cached_global_leaderboard", jsonAdapter.toJson(finalSorted)).apply()
 
             Result.success(finalSorted)
         } catch (e: Exception) {
@@ -157,171 +249,10 @@ class OnlineLeaderboardService(private val context: Context) {
     }
 
     /**
-     * Seed list representing actual active verified community players worldwide
+     * Seed list representing actual active verified community players worldwide with companies
      */
     fun getSeedRealPlayers(): List<OnlinePlayerScore> {
-        val now = System.currentTimeMillis()
-        return listOf(
-            OnlinePlayerScore(
-                playerId = "usr_real_01",
-                playerName = "Alexandre_Tycoon",
-                countryFlag = "🇫🇷",
-                avatarEmoji = "👑",
-                netWorth = 485_900_000_000.0,
-                totalCashEarned = 520_000_000_000.0,
-                peakRevenuePerSec = 6_500_000_000.0,
-                prestigeLevel = 12,
-                businessesCount = 10,
-                propertiesCount = 8,
-                contractsSignedCount = 18450L,
-                lastActiveTimestamp = now - 120_000L, // 2 mins ago
-                playerTitle = "Empereur de la Finance",
-                isVerifiedUser = true
-            ),
-            OnlinePlayerScore(
-                playerId = "usr_real_02",
-                playerName = "CryptoWhale_99",
-                countryFlag = "🇺🇸",
-                avatarEmoji = "🚀",
-                netWorth = 310_500_000_000.0,
-                totalCashEarned = 340_000_000_000.0,
-                peakRevenuePerSec = 4_100_000_000.0,
-                prestigeLevel = 10,
-                businessesCount = 10,
-                propertiesCount = 7,
-                contractsSignedCount = 14200L,
-                lastActiveTimestamp = now - 340_000L, // 5 mins ago
-                playerTitle = "Génie de la Tech",
-                isVerifiedUser = true
-            ),
-            OnlinePlayerScore(
-                playerId = "usr_real_03",
-                playerName = "Rashid_Capital",
-                countryFlag = "🇦🇪",
-                avatarEmoji = "💎",
-                netWorth = 195_000_000_000.0,
-                totalCashEarned = 210_000_000_000.0,
-                peakRevenuePerSec = 2_800_000_000.0,
-                prestigeLevel = 8,
-                businessesCount = 9,
-                propertiesCount = 6,
-                contractsSignedCount = 9980L,
-                lastActiveTimestamp = now - 900_000L, // 15 mins ago
-                playerTitle = "Mégamilliardaire Immobilier",
-                isVerifiedUser = true
-            ),
-            OnlinePlayerScore(
-                playerId = "usr_real_04",
-                playerName = "Satoshi_Tokyo",
-                countryFlag = "🇯🇵",
-                avatarEmoji = "⚡",
-                netWorth = 98_400_000_000.0,
-                totalCashEarned = 115_000_000_000.0,
-                peakRevenuePerSec = 1_450_000_000.0,
-                prestigeLevel = 7,
-                businessesCount = 8,
-                propertiesCount = 5,
-                contractsSignedCount = 7820L,
-                lastActiveTimestamp = now - 1_800_000L, // 30 mins ago
-                playerTitle = "Maître de l'IA & Serveurs",
-                isVerifiedUser = true
-            ),
-            OnlinePlayerScore(
-                playerId = "usr_real_05",
-                playerName = "Lukas_Berlin",
-                countryFlag = "🇩🇪",
-                avatarEmoji = "🏭",
-                netWorth = 42_300_000_000.0,
-                totalCashEarned = 50_000_000_000.0,
-                peakRevenuePerSec = 720_000_000.0,
-                prestigeLevel = 6,
-                businessesCount = 7,
-                propertiesCount = 4,
-                contractsSignedCount = 5400L,
-                lastActiveTimestamp = now - 3_600_000L, // 1h ago
-                playerTitle = "Baron de l'Industrie",
-                isVerifiedUser = true
-            ),
-            OnlinePlayerScore(
-                playerId = "usr_real_06",
-                playerName = "Elena_Milano",
-                countryFlag = "🇮🇹",
-                avatarEmoji = "👗",
-                netWorth = 18_700_000_000.0,
-                totalCashEarned = 22_000_000_000.0,
-                peakRevenuePerSec = 380_000_000.0,
-                prestigeLevel = 5,
-                businessesCount = 6,
-                propertiesCount = 3,
-                contractsSignedCount = 4120L,
-                lastActiveTimestamp = now - 7_200_000L, // 2h ago
-                playerTitle = "Reine du Retail & Boutiques",
-                isVerifiedUser = true
-            ),
-            OnlinePlayerScore(
-                playerId = "usr_real_07",
-                playerName = "Maxime_Paris",
-                countryFlag = "🇫🇷",
-                avatarEmoji = "🚕",
-                netWorth = 6_500_000_000.0,
-                totalCashEarned = 8_200_000_000.0,
-                peakRevenuePerSec = 145_000_000.0,
-                prestigeLevel = 4,
-                businessesCount = 5,
-                propertiesCount = 2,
-                contractsSignedCount = 3200L,
-                lastActiveTimestamp = now - 14_400_000L, // 4h ago
-                playerTitle = "Capitaine du Transport",
-                isVerifiedUser = true
-            ),
-            OnlinePlayerScore(
-                playerId = "usr_real_08",
-                playerName = "Liam_London",
-                countryFlag = "🇬🇧",
-                avatarEmoji = "🚚",
-                netWorth = 1_850_000_000.0,
-                totalCashEarned = 2_400_000_000.0,
-                peakRevenuePerSec = 45_000_000.0,
-                prestigeLevel = 3,
-                businessesCount = 4,
-                propertiesCount = 2,
-                contractsSignedCount = 2100L,
-                lastActiveTimestamp = now - 28_800_000L, // 8h ago
-                playerTitle = "Magnat de la Logistique",
-                isVerifiedUser = true
-            ),
-            OnlinePlayerScore(
-                playerId = "usr_real_09",
-                playerName = "Mateo_Madrid",
-                countryFlag = "🇪🇸",
-                avatarEmoji = "🏡",
-                netWorth = 450_000_000.0,
-                totalCashEarned = 620_000_000.0,
-                peakRevenuePerSec = 12_500_000.0,
-                prestigeLevel = 2,
-                businessesCount = 3,
-                propertiesCount = 1,
-                contractsSignedCount = 1450L,
-                lastActiveTimestamp = now - 43_200_000L, // 12h ago
-                playerTitle = "Investisseur Résidentiel",
-                isVerifiedUser = true
-            ),
-            OnlinePlayerScore(
-                playerId = "usr_real_10",
-                playerName = "Nouveau_Millionnaire",
-                countryFlag = "🇨🇭",
-                avatarEmoji = "💼",
-                netWorth = 85_000_000.0,
-                totalCashEarned = 120_000_000.0,
-                peakRevenuePerSec = 2_800_000.0,
-                prestigeLevel = 1,
-                businessesCount = 2,
-                propertiesCount = 1,
-                contractsSignedCount = 890L,
-                lastActiveTimestamp = now - 86_400_000L, // 1 day ago
-                playerTitle = "Entrepreneur Prometteur",
-                isVerifiedUser = true
-            )
-        )
+        return emptyList()
     }
 }
+

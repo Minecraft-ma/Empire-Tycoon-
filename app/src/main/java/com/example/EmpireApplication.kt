@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Context
 import android.os.Build
 import android.webkit.WebView
-import com.example.ads.AdManager
 import java.io.File
 
 class EmpireApplication : Application() {
@@ -12,9 +11,6 @@ class EmpireApplication : Application() {
         super.onCreate()
 
         setupWebViewEnvironment(this)
-
-        // Initialize Google Mobile Ads SDK with test device configuration
-        AdManager.initialize(this)
 
         // Automatically check for application updates from GitHub Releases
         com.example.updater.UpdateManager.checkForUpdates(this, isManual = false)

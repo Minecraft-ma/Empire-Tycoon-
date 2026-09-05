@@ -32,8 +32,20 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -45,6 +57,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.ads.AdManager
 import com.example.updater.UpdateManager
 import com.example.ui.components.UpdateDialog
+import com.example.ui.components.AccountSetupDialog
 import com.example.ui.components.AuctionWarDialog
 import com.example.ui.components.CrisisDialog
 import com.example.ui.components.DailyRewardsAndQuestsDialog
@@ -104,42 +117,12 @@ fun EmpireApp(
     val context = LocalContext.current
 
     val handleTriggerAd: (String, Double, String) -> Unit = { desc, bonus, action ->
-        val activity = context.findActivity()
-        if (activity != null && AdManager.isAdReady.value) {
-            AdManager.showRewardedAd(
-                activity = activity,
-                onUserEarnedReward = { _ ->
-                    viewModel.onAdRewardEarned(action, bonus)
-                },
-                onAdClosed = {},
-                onAdUnavailable = { _ ->
-                    viewModel.triggerRewardedAd(desc, bonus, action)
-                }
-            )
-        } else {
-            if (activity != null) {
-                AdManager.loadRewardedAd(activity)
-            }
-            viewModel.triggerRewardedAd(desc, bonus, action)
-        }
+        viewModel.triggerRewardedAd(desc, bonus, action)
     }
 
     val handleTriggerInterstitialAd: () -> Unit = {
-        val activity = context.findActivity()
-        if (activity != null && AdManager.isInterstitialReady.value) {
-            AdManager.showInterstitialAd(
-                activity = activity,
-                onAdClosed = {
-                    viewModel.onAdRewardEarned("INTERSTITIAL", 5000.0)
-                }
-            )
-        } else {
-            if (activity != null) {
-                AdManager.loadInterstitialAd(activity)
-            }
-            viewModel.onAdRewardEarned("INTERSTITIAL", 5000.0)
-            viewModel.showFeedback("Annonce interstitielle simulée de transition (Bonus de +$5 000 !)")
-        }
+        viewModel.onAdRewardEarned("INTERSTITIAL", 5000.0)
+        viewModel.showFeedback("Campagne Flash Entreprise finalisée (+5 000 $ versés à la trésorerie) !")
     }
 
     LaunchedEffect(state.feedbackMessage) {
@@ -166,53 +149,117 @@ fun EmpireApp(
             }
         },
         bottomBar = {
-            NavigationBar(
-                containerColor = Color(0xFF0C1021),
-                tonalElevation = 8.dp,
-                modifier = Modifier
-                    .windowInsetsPadding(WindowInsets.navigationBars)
-                    .border(width = 1.dp, color = Color(0xFF1E293B))
-                    .testTag("bottom_navigation_bar")
-            ) {
-                val tabs = listOf(
-                    Triple(0, "Accueil", Icons.Default.FlashOn),
-                    Triple(1, "Propriétés", Icons.Default.Business),
-                    Triple(2, "Bourse", Icons.Default.ShowChart),
-                    Triple(3, "Sponsors", Icons.Default.MonetizationOn),
-                    Triple(4, "Prestige", Icons.Default.WorkspacePremium)
-                )
+            val infiniteTransition = rememberInfiniteTransition(label = "liquidBarAnim")
+            val liquidOffset by infiniteTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = 20f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(2000, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "liquidOffset"
+            )
 
-                tabs.forEach { (index, label, icon) ->
-                    val isSelected = state.selectedTab == index
-                    NavigationBarItem(
-                        selected = isSelected,
-                        onClick = { viewModel.selectTab(index) },
-                        icon = {
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = label,
-                                tint = if (isSelected) Color(0xFF4ADE80) else Color(0xFF64748B)
-                            )
-                        },
-                        label = {
-                            Text(
-                                text = label,
-                                fontSize = 10.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) Color(0xFF4ADE80) else Color(0xFF64748B),
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Color(0xFF4ADE80),
-                            selectedTextColor = Color(0xFF4ADE80),
-                            indicatorColor = Color(0xFF1E293B),
-                            unselectedIconColor = Color(0xFF64748B),
-                            unselectedTextColor = Color(0xFF64748B)
-                        ),
-                        modifier = Modifier.testTag("nav_tab_$index")
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.Transparent, Color(0xFF070C1A).copy(alpha = 0.98f), Color(0xFF050811))
+                        )
                     )
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(72.dp)
+                        .clip(RoundedCornerShape(32.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color(0xFF0F172A).copy(alpha = 0.98f),
+                                    Color(0xFF1E293B).copy(alpha = 0.95f),
+                                    Color(0xFF0F172A).copy(alpha = 0.98f)
+                                )
+                            )
+                        )
+                        .border(
+                            width = 1.5.dp,
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color(0xFF22C55E).copy(alpha = 0.7f),
+                                    Color(0xFF38BDF8).copy(alpha = 0.7f),
+                                    Color(0xFF22C55E).copy(alpha = 0.7f)
+                                )
+                            ),
+                            shape = RoundedCornerShape(32.dp)
+                        )
+                        .clip(RoundedCornerShape(32.dp))
+                ) {
+                    NavigationBar(
+                        containerColor = Color.Transparent,
+                        tonalElevation = 0.dp,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .testTag("bottom_navigation_bar")
+                    ) {
+                        val tabs = listOf(
+                            Triple(0, "Accueil", Icons.Default.FlashOn),
+                            Triple(1, "Propriétés", Icons.Default.Business),
+                            Triple(2, "Bourse", Icons.Default.ShowChart),
+                            Triple(3, "Régie Pub", Icons.Default.MonetizationOn),
+                            Triple(4, "Prestige", Icons.Default.WorkspacePremium)
+                        )
+
+                        tabs.forEach { (index, label, icon) ->
+                            val isSelected = state.selectedTab == index
+                            NavigationBarItem(
+                                selected = isSelected,
+                                onClick = { viewModel.selectTab(index) },
+                                icon = {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(if (isSelected) 40.dp + liquidOffset.dp * 0.1f else 32.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                brush = if (isSelected)
+                                                    Brush.radialGradient(listOf(Color(0xFF22C55E).copy(alpha = 0.4f), Color(0xFF10B981).copy(alpha = 0.1f)))
+                                                else
+                                                    Brush.linearGradient(listOf(Color.Transparent, Color.Transparent))
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = icon,
+                                            contentDescription = label,
+                                            tint = if (isSelected) Color(0xFF4ADE80) else Color(0xFF64748B),
+                                            modifier = Modifier.size(if (isSelected) 22.dp else 18.dp)
+                                        )
+                                    }
+                                },
+                                label = {
+                                    Text(
+                                        text = label,
+                                        fontSize = 10.sp,
+                                        fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium,
+                                        color = if (isSelected) Color(0xFF4ADE80) else Color(0xFF64748B),
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = Color(0xFF4ADE80),
+                                    selectedTextColor = Color(0xFF4ADE80),
+                                    indicatorColor = Color.Transparent,
+                                    unselectedIconColor = Color(0xFF64748B),
+                                    unselectedTextColor = Color(0xFF64748B)
+                                ),
+                                modifier = Modifier.testTag("nav_tab_$index")
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -242,6 +289,7 @@ fun EmpireApp(
                         onOpenLeaderboard = { viewModel.openLeaderboard() },
                         onOpenRealEstateMarket = { viewModel.openRealEstateMarket() },
                         onOpenSettings = { viewModel.openSettingsDialog() },
+                        onOpenAccountSetup = { viewModel.openAccountSetupDialog() },
                         onUpdatePlayerName = { viewModel.updatePlayerName(it) }
                     )
                     1 -> EmpireBusinessesScreen(
@@ -268,9 +316,13 @@ fun EmpireApp(
                     3 -> AdMonetizationScreen(
                         state = state,
                         onUnlockAdNetwork = { viewModel.unlockAdNetwork(it) },
+                        onUpgradeAdNetwork = { viewModel.upgradeAdNetwork(it) },
+                        onLaunchAdCampaign = { viewModel.launchCompanyAdCampaign(it) },
                         onOpenSponsorDeal = { viewModel.openActiveSponsorMiniGame() },
                         onTriggerRewardedAd = { desc, bonus, action -> handleTriggerAd(desc, bonus, action) },
-                        onTriggerInterstitialAd = handleTriggerInterstitialAd
+                        onTriggerInterstitialAd = handleTriggerInterstitialAd,
+                        onSignSponsorshipContract = { viewModel.signSponsorshipContract(it) },
+                        onRenewSponsorshipContract = { viewModel.renewSponsorshipContract(it) }
                     )
                     4 -> ExecutivePrestigeScreen(
                         state = state,
@@ -450,6 +502,7 @@ fun EmpireApp(
             SettingsDialog(
                 state = state,
                 onDismiss = { viewModel.closeSettingsDialog() },
+                onOpenAccountSetup = { viewModel.openAccountSetupDialog() },
                 onToggleSound = { viewModel.toggleSound() },
                 onToggleHaptics = { viewModel.toggleHaptics() },
                 onToggleBatterySaver = { viewModel.toggleBatterySaver() },
@@ -457,6 +510,17 @@ fun EmpireApp(
                 onExportSave = { viewModel.exportSaveData() },
                 onImportSave = { viewModel.importSaveData(it) },
                 onResetGame = { viewModel.resetGameProgress() }
+            )
+        }
+
+        // Custom Account Setup Dialog (No OAuth, Player Name & Company Name)
+        if (state.isAccountSetupDialogOpen) {
+            AccountSetupDialog(
+                state = state,
+                onDismiss = { viewModel.closeAccountSetupDialog() },
+                onSaveAccount = { name, company, flag, avatar ->
+                    viewModel.savePlayerAccount(name, company, flag, avatar)
+                }
             )
         }
     }

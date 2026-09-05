@@ -216,31 +216,31 @@ fun RealEstateMarketContent(
                     }
                 }
 
-                // Balance VIZA Pill
+                // Balance Pill
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))
-                        .background(Color(0xFF131C31))
-                        .border(1.dp, Color(0xFF2E3D5C), RoundedCornerShape(20.dp))
-                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(Color(0xFF064E3B).copy(alpha = 0.6f), Color(0xFF0F172A))
+                            )
+                        )
+                        .border(1.dp, Color(0xFF10B981).copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "Balance: ",
-                            color = TextSecondary,
-                            fontSize = 11.sp
+                        Icon(
+                            Icons.Default.MonetizationOn,
+                            contentDescription = null,
+                            tint = Color(0xFF10B981),
+                            modifier = Modifier.size(15.dp)
                         )
-                        Text(
-                            text = "VIZA ",
-                            color = Color(0xFF38BDF8),
-                            fontWeight = FontWeight.Black,
-                            fontSize = 11.sp
-                        )
+                        Spacer(modifier = Modifier.width(5.dp))
                         Text(
                             text = MoneyFormatter.format(state.cash),
-                            color = EmeraldLight,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
+                            color = Color(0xFF34D399),
+                            fontWeight = FontWeight.Black,
+                            fontSize = 13.sp
                         )
                     }
                 }

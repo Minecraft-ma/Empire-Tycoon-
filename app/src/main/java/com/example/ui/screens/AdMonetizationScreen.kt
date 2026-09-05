@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,50 +17,50 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AdsClick
-import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.Casino
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Handshake
-import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.MonetizationOn
-import androidx.compose.material.icons.filled.PlayCircle
-import androidx.compose.material.icons.filled.RocketLaunch
-import androidx.compose.material.icons.filled.Stars
-import androidx.compose.material.icons.filled.WorkspacePremium
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled. MonetizationOn
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.AdNetworkTier
 import com.example.model.MoneyFormatter
 import com.example.ui.theme.AmberDark
-import com.example.ui.theme.AmberLight
-import com.example.ui.theme.AmberPrimary
-import com.example.ui.theme.CrimsonFrenzy
-import com.example.ui.theme.CyberCyan
-import com.example.ui.theme.DarkCardBorder
+import com.example.ui.theme.DarkBackground
 import com.example.ui.theme.DarkSurface
-import com.example.ui.theme.DarkSurfaceVariant
-import com.example.ui.theme.DesignSystem
-import com.example.ui.theme.ElectricPurple
 import com.example.ui.theme.EmeraldDark
 import com.example.ui.theme.EmeraldLight
 import com.example.ui.theme.EmeraldPrimary
@@ -67,637 +68,466 @@ import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextSecondary
 import com.example.viewmodel.GameUiState
 
+enum class AdSortOption {
+    MOST_LUCRATIVE,
+    CHEAPEST,
+    HIGHEST_LEVEL
+}
+
 @Composable
 fun AdMonetizationScreen(
     state: GameUiState,
     onUnlockAdNetwork: (id: String) -> Unit,
+    onUpgradeAdNetwork: (id: String) -> Unit,
+    onLaunchAdCampaign: (id: String) -> Unit,
     onOpenSponsorDeal: () -> Unit,
     onTriggerRewardedAd: (rewardDesc: String, bonusCash: Double, actionType: String) -> Unit,
     onTriggerInterstitialAd: () -> Unit,
+    onSignSponsorshipContract: (id: String) -> Unit = {},
+    onRenewSponsorshipContract: (id: String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val totalCpm = state.adNetworks.filter { it.isUnlocked }.sumOf { it.cpmRate }
+    var sortOption by remember { mutableStateOf(AdSortOption.MOST_LUCRATIVE) }
+    var selectedChannel by remember { mutableStateOf<String?>(null) }
+    var onlyUnlockedFilter by remember { mutableStateOf(false) }
 
-    LazyColumn(
+    val channels = remember(state.adNetworks) {
+        state.adNetworks.map { it.channelType }.distinct()
+    }
+
+    val filteredAndSortedNetworks = remember(state.adNetworks, sortOption, selectedChannel, onlyUnlockedFilter) {
+        var list = state.adNetworks
+        if (onlyUnlockedFilter) {
+            list = list.filter { it.isUnlocked }
+        } else if (selectedChannel != null) {
+            list = list.filter { it.channelType == selectedChannel }
+        }
+
+        when (sortOption) {
+            AdSortOption.MOST_LUCRATIVE -> list.sortedByDescending { it.currentRevenuePerSec }
+            AdSortOption.CHEAPEST -> list.sortedBy { if (it.isUnlocked) it.nextUpgradeCost else it.unlockCost }
+            AdSortOption.HIGHEST_LEVEL -> list.sortedByDescending { it.level }
+        }
+    }
+
+    val totalUnlocked = state.adNetworks.count { it.isUnlocked }
+    val totalCount = state.adNetworks.size
+    val totalAdPassiveSec = state.adNetworks.filter { it.isUnlocked }.sumOf { it.currentRevenuePerSec }
+    val totalAudienceReach = state.adNetworks.filter { it.isUnlocked }.sumOf { it.currentReach }
+
+    Column(
         modifier = modifier
             .fillMaxSize()
-            .testTag("ad_monetization_list"),
-        contentPadding = PaddingValues(DesignSystem.Padding.screenOuter),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .background(DarkBackground)
     ) {
-        // En-tête : Hub des Sponsors & AdMob
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("ad_studio_kpi_card"),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = DarkSurface),
-                border = androidx.compose.foundation.BorderStroke(1.dp, EmeraldPrimary.copy(alpha = 0.5f)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(text = "💰", fontSize = 18.sp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column {
-                                Text(
-                                    text = "SPONSORS & BOOSTS RÉMUNÉRÉS",
-                                    color = EmeraldDark,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Black,
-                                    letterSpacing = 0.8.sp
-                                )
-                                Text(
-                                    text = "Regarde des pubs pour décupler tes milliards !",
-                                    color = TextSecondary,
-                                    fontSize = 11.sp
-                                )
-                            }
-                        }
-
-                        // Statut AdMob en direct
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFF064E3B))
-                                .border(1.dp, EmeraldPrimary, RoundedCornerShape(8.dp))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(7.dp)
-                                        .background(EmeraldLight, CircleShape)
-                                )
-                                Spacer(modifier = Modifier.width(5.dp))
-                                Text(
-                                    text = "AdMob Prêt",
-                                    color = EmeraldLight,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Black
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // 3 KPI Cards
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // Metric 1: Bonus Actif
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .background(DarkSurfaceVariant, RoundedCornerShape(10.dp))
-                                .border(1.dp, AmberPrimary.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
-                                .padding(8.dp)
-                        ) {
-                            Column {
-                                Text("Multiplicateur", color = AmberDark, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                                Text(
-                                    "x${String.format("%.1f", state.globalMultiplier)}",
-                                    color = Color.White,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Black
-                                )
-                            }
-                        }
-
-                        // Metric 2: Pubs Vues
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .background(DarkSurfaceVariant, RoundedCornerShape(10.dp))
-                                .border(1.dp, CyberCyan.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
-                                .padding(8.dp)
-                        ) {
-                            Column {
-                                Text("Campagnes", color = CyberCyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                                Text(
-                                    "${state.adImpressionsCount} vues",
-                                    color = Color.White,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Black
-                                )
-                            }
-                        }
-
-                        // Metric 3: Cash Gagné
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .background(DarkSurfaceVariant, RoundedCornerShape(10.dp))
-                                .border(1.dp, EmeraldPrimary.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
-                                .padding(8.dp)
-                        ) {
-                            Column {
-                                Text("Cash Débloqué", color = EmeraldDark, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                                Text(
-                                    MoneyFormatter.format(state.totalAdRevenueEarned),
-                                    color = Color.White,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Black
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Section Titre
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(text = "🌟", fontSize = 16.sp)
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "MÉGA-BOOSTS SPONSORISÉS GRATUITS",
-                    color = Color.White,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 0.5.sp
-                )
-            }
-        }
-
-        // 1. LE BOOST TURBO REVENUS X2 (4H)
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("rewarded_boost_x2_card"),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = DarkSurface),
-                border = androidx.compose.foundation.BorderStroke(1.5.dp, EmeraldPrimary),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .background(EmeraldPrimary, CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.RocketLaunch, contentDescription = null, tint = Color.Black, modifier = Modifier.size(20.dp))
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "BOOST TURBO REVENUS x2 (4 HEURES)",
-                                    color = EmeraldDark,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Black
-                                )
-                                Text(
-                                    text = "Double immédiatement les gains passifs de tout ton empire !",
-                                    color = TextSecondary,
-                                    fontSize = 10.sp
-                                )
-                            }
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .background(EmeraldPrimary, RoundedCornerShape(6.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = "VIP",
-                                color = Color.Black,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Black
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Button(
-                        onClick = {
-                            onTriggerRewardedAd(
-                                "Boost Turbo x2.0 Actif pendant 4h & Injection Cash !",
-                                state.totalPassiveRevenuePerSec * 600.0 + 5000.0,
-                                "BOOST"
-                            )
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(42.dp)
-                            .testTag("watch_rewarded_boost_btn"),
-                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary, contentColor = Color.Black),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.PlayCircle, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "REGARDER UNE PUB POUR ACTIVER LE x2 (4H)",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Black
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // 2. L'INVESTISSEUR PROVIDENTIEL (+50% DE CASH IMMÉDIAT)
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("rewarded_investor_card"),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = DarkSurface),
-                border = androidx.compose.foundation.BorderStroke(1.5.dp, AmberPrimary),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .background(AmberPrimary, CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(text = "💼", fontSize = 18.sp)
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "L'INVESTISSEUR MILLIARDAIRE",
-                                    color = AmberDark,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Black
-                                )
-                                Text(
-                                    text = "Chèque immédiat de +50% de ta valeur nette !",
-                                    color = TextSecondary,
-                                    fontSize = 10.sp
-                                )
-                            }
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .background(AmberPrimary, RoundedCornerShape(6.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = "CASH ++",
-                                color = Color.Black,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Black
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    val cashBonus = (state.netWorth * 0.50).coerceAtLeast(10000.0)
-
-                    Button(
-                        onClick = {
-                            onTriggerRewardedAd(
-                                "Chèque Géant de l'Investisseur : +${MoneyFormatter.format(cashBonus)} !",
-                                cashBonus,
-                                "INVESTOR_CASH"
-                            )
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(42.dp)
-                            .testTag("watch_rewarded_investor_btn"),
-                        colors = ButtonDefaults.buttonColors(containerColor = AmberPrimary, contentColor = Color.Black),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.MonetizationOn, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "ENCAISSER +${MoneyFormatter.format(cashBonus)} (PUB VIDÉO)",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Black
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // 3. FRÉNÉSIE BOURSIÈRE X10 (60 SECONDES)
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("rewarded_frenzy_card"),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = DarkSurface),
-                border = androidx.compose.foundation.BorderStroke(1.5.dp, CrimsonFrenzy),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .background(CrimsonFrenzy, CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.LocalFireDepartment, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "FRÉNÉSIE BOURSIÈRE ROYALE x10",
-                                    color = CrimsonFrenzy,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Black
-                                )
-                                Text(
-                                    text = "Multiplie la valeur de TOUS tes clics par 10 pendant 60s !",
-                                    color = TextSecondary,
-                                    fontSize = 10.sp
-                                )
-                            }
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .background(CrimsonFrenzy, RoundedCornerShape(6.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = "x10 TAPS",
-                                color = Color.White,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Black
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Button(
-                        onClick = {
-                            onTriggerRewardedAd(
-                                "Frénésie Boursière x10 Déclenchée + Cash Immédiat !",
-                                state.cashPerTap * 300.0,
-                                "FRENZY_BOOST"
-                            )
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(42.dp)
-                            .testTag("watch_rewarded_frenzy_btn"),
-                        colors = ButtonDefaults.buttonColors(containerColor = CrimsonFrenzy, contentColor = Color.White),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(text = "🔥", fontSize = 16.sp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "LANCER LA FRÉNÉSIE x10 (PUB VIDÉO)",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Black
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // 4. ACCORD COMMERCIAL INSTITUTIONNEL (INTERSTITIEL RAPIDE)
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("interstitial_ad_card"),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = DarkSurface),
-                border = androidx.compose.foundation.BorderStroke(1.dp, CyberCyan.copy(alpha = 0.6f)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .background(CyberCyan, CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Handshake, contentDescription = null, tint = Color.Black, modifier = Modifier.size(20.dp))
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "CONTRAT COMMERCIAL FLASH",
-                                    color = CyberCyan,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Black
-                                )
-                                Text(
-                                    text = "Signature éclair pour débloquer +$5 000 immédiatement.",
-                                    color = TextSecondary,
-                                    fontSize = 10.sp
-                                )
-                            }
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .background(CyberCyan, RoundedCornerShape(6.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = "+$5,000",
-                                color = Color.Black,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Black
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Button(
-                        onClick = onTriggerInterstitialAd,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(38.dp)
-                            .testTag("show_interstitial_ad_btn"),
-                        colors = ButtonDefaults.buttonColors(containerColor = CyberCyan, contentColor = Color.Black),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.AdsClick, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("SIGNER LE CONTRAT FLASH (+5 000 $)", fontSize = 11.sp, fontWeight = FontWeight.Black)
-                        }
-                    }
-                }
-            }
-        }
-
-        // Section : Réseaux & Régies Publicitaires du Conglomérat
-        item {
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(text = "📡", fontSize = 16.sp)
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "RÉSEAUX PUBLICITAIRES DE L'EMPIRE",
-                    color = Color.White,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 0.5.sp
-                )
-            }
-        }
-
-        items(state.adNetworks, key = { it.id }) { net ->
-            val canAfford = state.cash >= net.unlockCost
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("ad_network_card_${net.id}"),
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (net.isUnlocked) DarkSurface else DarkSurface.copy(alpha = 0.6f)
-                ),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    if (net.isUnlocked) EmeraldPrimary.copy(alpha = 0.5f) else DarkCardBorder
-                )
-            ) {
+        // Hero Header KPI Card (Matching Real Estate Portfolio strip)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Brush.horizontalGradient(listOf(Color(0xFF0F172A), Color(0xFF1E293B))))
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(if (net.isUnlocked) Color(0xFF064E3B) else DarkSurfaceVariant),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            val emoji = when (net.id) {
-                                "admob" -> "🟢"
-                                "meta" -> "🔷"
-                                "unity" -> "🎮"
-                                "applovin" -> "⚡"
-                                else -> "📡"
-                            }
-                            Text(text = emoji, fontSize = 18.sp)
-                        }
-
-                        Spacer(modifier = Modifier.width(10.dp))
-
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = "📡", fontSize = 20.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Text(
-                                text = net.name,
-                                color = if (net.isUnlocked) Color.White else TextSecondary,
-                                fontSize = 12.sp,
+                                text = "RÉGIE PUBLICITAIRE & CANAUX",
+                                color = Color.White,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Black
                             )
                             Text(
-                                text = "Index CPM : +${String.format("%.1f", net.cpmRate)} pts",
-                                color = if (net.isUnlocked) EmeraldDark else TextMuted,
+                                text = "Canaux actifs : $totalUnlocked / $totalCount • Portée : ${MoneyFormatter.format(totalAudienceReach.toDouble())} spectateurs",
+                                color = EmeraldLight,
                                 fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
 
-                    if (net.isUnlocked) {
-                        Box(
-                            modifier = Modifier
-                                .background(Color(0xFF064E3B), RoundedCornerShape(6.dp))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Text("ACTIF ✓", color = EmeraldLight, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(androidx.compose.material.icons.Icons.Default.MonetizationOn, contentDescription = null, tint = EmeraldLight, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "+${MoneyFormatter.formatPerSec(totalAdPassiveSec)}",
+                            color = EmeraldLight,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                }
+            }
+        }
+
+        // Filter Pills Row (Exact Property Pattern)
+        LazyRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(if (sortOption == AdSortOption.MOST_LUCRATIVE && !onlyUnlockedFilter && selectedChannel == null) Color(0xFFE11D48) else Color(0xFF1E293B))
+                        .clickable {
+                            sortOption = AdSortOption.MOST_LUCRATIVE
+                            onlyUnlockedFilter = false
                         }
-                    } else {
-                        Button(
-                            onClick = { onUnlockAdNetwork(net.id) },
-                            enabled = canAfford,
-                            modifier = Modifier.height(34.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = AmberPrimary,
-                                contentColor = Color.Black,
-                                disabledContainerColor = DarkSurfaceVariant,
-                                disabledContentColor = TextMuted
-                            ),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp)
-                        ) {
+                        .padding(horizontal = 14.dp, vertical = 7.dp)
+                ) {
+                    Text(text = "Plus lucratif", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            item {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(if (sortOption == AdSortOption.CHEAPEST && !onlyUnlockedFilter && selectedChannel == null) Color(0xFFE11D48) else Color(0xFF1E293B))
+                        .clickable {
+                            sortOption = AdSortOption.CHEAPEST
+                            onlyUnlockedFilter = false
+                        }
+                        .padding(horizontal = 14.dp, vertical = 7.dp)
+                ) {
+                    Text(text = "Moins cher", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            item {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(if (onlyUnlockedFilter) EmeraldDark else Color(0xFF1E293B))
+                        .clickable {
+                            onlyUnlockedFilter = !onlyUnlockedFilter
+                            selectedChannel = null
+                        }
+                        .padding(horizontal = 12.dp, vertical = 7.dp)
+                ) {
+                    Text(
+                        text = "Canaux Acquis ($totalUnlocked)",
+                        color = if (onlyUnlockedFilter) Color.White else TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            items(channels) { channel ->
+                val isSelected = selectedChannel == channel && !onlyUnlockedFilter
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(if (isSelected) Color(0xFF3B82F6) else Color(0xFF1E293B))
+                        .clickable {
+                            selectedChannel = if (isSelected) null else channel
+                            onlyUnlockedFilter = false
+                        }
+                        .padding(horizontal = 12.dp, vertical = 7.dp)
+                ) {
+                    Text(
+                        text = channel,
+                        color = if (isSelected) Color.White else TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        // List of Advertising Networks & Channels Cards (Matching RealEstatePropertyCard style)
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .weight(1f)
+                .testTag("ad_networks_lazy_column"),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(filteredAndSortedNetworks, key = { it.id }) { network ->
+                AdNetworkCard(
+                    network = network,
+                    playerCash = state.cash,
+                    onUnlock = { onUnlockAdNetwork(network.id) },
+                    onUpgrade = { onUpgradeAdNetwork(network.id) },
+                    onLaunchCampaign = { onLaunchAdCampaign(network.id) }
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun AdNetworkCard(
+    network: AdNetworkTier,
+    playerCash: Double,
+    onUnlock: () -> Unit,
+    onUpgrade: () -> Unit,
+    onLaunchCampaign: () -> Unit
+) {
+    val isAffordableToUnlock = playerCash >= network.unlockCost && !network.isUnlocked
+    val isAffordableToUpgrade = playerCash >= network.nextUpgradeCost && network.isUnlocked
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("ad_network_card_${network.id}"),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF111827)),
+        border = androidx.compose.foundation.BorderStroke(
+            width = if (network.isUnlocked) 1.5.dp else 1.dp,
+            color = if (network.isUnlocked) Color(0xFF10B981) else Color(0xFF1F2937)
+        )
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // Visual Image Frame with HUD Corner Brackets (Exact Real Estate Style)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(170.dp)
+                    .background(Color(0xFF0B0F19))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color(0xFF1E293B), Color(0xFF0F172A))
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = network.iconEmoji, fontSize = 52.sp)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = network.channelType.uppercase(),
+                            color = Color(0xFF94A3B8),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.5.sp
+                        )
+                    }
+                }
+
+                // Dark gradient overlay
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f))
+                            )
+                        )
+                )
+
+                // HUD Corner Brackets Overlay
+                HudCornerBrackets(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(10.dp)
+                )
+
+                // Channel Type Tag (Top Left)
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(14.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Black.copy(alpha = 0.65f))
+                        .border(0.8.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "${network.iconEmoji} ${network.channelType}",
+                        color = Color.White,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // Unlocked Stamp or Level Badge (Top Right)
+                if (network.isUnlocked) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(14.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFF15803D))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
                             Text(
-                                text = MoneyFormatter.format(net.unlockCost),
+                                text = "NIVEAU ${network.level}",
+                                color = Color.White,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Black
                             )
                         }
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(14.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.Black.copy(alpha = 0.65f))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = "VERROUILLÉ 🔒",
+                            color = AmberDark,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                // Name & Cost on Bottom-Left
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 14.dp, bottom = 12.dp)
+                ) {
+                    Text(
+                        text = if (network.isUnlocked) MoneyFormatter.format(network.nextUpgradeCost) else MoneyFormatter.format(network.unlockCost),
+                        color = Color.White,
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Public,
+                            contentDescription = null,
+                            tint = Color(0xFF94A3B8),
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = network.name,
+                            color = Color(0xFFE2E8F0),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                // Action Button on Bottom-Right (Unlock or Upgrade)
+                if (!network.isUnlocked) {
+                    Button(
+                        onClick = onUnlock,
+                        enabled = isAffordableToUnlock,
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF22C55E),
+                            disabledContainerColor = Color(0xFF374151)
+                        ),
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = 14.dp, bottom = 12.dp)
+                            .height(38.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Débloquer", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                } else {
+                    Button(
+                        onClick = onUpgrade,
+                        enabled = isAffordableToUpgrade,
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF3B82F6),
+                            disabledContainerColor = Color(0xFF374151)
+                        ),
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = 14.dp, bottom = 12.dp)
+                            .height(38.dp)
+                    ) {
+                        Icon(Icons.Default.ArrowUpward, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Améliorer", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            // Details and Revenue Section Below Image
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp)
+            ) {
+                Text(
+                    text = network.description,
+                    color = Color(0xFF94A3B8),
+                    fontSize = 11.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Speed, contentDescription = null, tint = EmeraldLight, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (network.isUnlocked) "+${MoneyFormatter.formatPerSec(network.currentRevenuePerSec)}/s" else "0 💰/s",
+                            color = EmeraldLight,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Public, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Portée : ${MoneyFormatter.format(network.currentReach.toDouble())}",
+                            color = Color(0xFFE2E8F0),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                if (network.isUnlocked) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Button(
+                        onClick = onLaunchCampaign,
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8B5CF6)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(36.dp)
+                    ) {
+                        Icon(Icons.Default.Campaign, contentDescription = null, modifier = Modifier.size(15.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Lancer Campagne Flash (+x2)", fontSize = 11.sp, fontWeight = FontWeight.Black)
                     }
                 }
             }

@@ -18,13 +18,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.VolumeUp
@@ -35,6 +39,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -65,6 +71,7 @@ import com.example.viewmodel.GameUiState
 fun SettingsDialog(
     state: GameUiState,
     onDismiss: () -> Unit,
+    onOpenAccountSetup: () -> Unit = {},
     onToggleSound: () -> Unit,
     onToggleHaptics: () -> Unit,
     onToggleBatterySaver: () -> Unit,
@@ -74,6 +81,9 @@ fun SettingsDialog(
     onResetGame: () -> Unit
 ) {
     var showResetConfirm by remember { mutableStateOf(false) }
+    var showImportDialog by remember { mutableStateOf(false) }
+    var importCodeText by remember { mutableStateOf("") }
+    var importErrorMsg by remember { mutableStateOf<String?>(null) }
     var exportMsg by remember { mutableStateOf<String?>(null) }
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
@@ -141,6 +151,69 @@ fun SettingsDialog(
                         .weight(1f),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    // Compte & Entreprise
+                    item {
+                        SettingCategoryHeader("COMPTE & ENTREPRISE JOUEUR")
+                    }
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF131C31)),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.4f))
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(38.dp)
+                                                .background(Color(0xFF1E293B), CircleShape)
+                                                .border(1.dp, Color(0xFF38BDF8), CircleShape),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(text = state.avatarEmoji.ifBlank { "💼" }, fontSize = 18.sp)
+                                        }
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Column {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = if (state.playerName.isNotBlank()) state.playerName else "Player234",
+                                                    color = Color.White,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 13.sp
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(text = state.countryFlag.ifBlank { "🇫🇷" }, fontSize = 12.sp)
+                                            }
+                                            Text(
+                                                text = if (state.companyName.isNotBlank()) state.companyName else "Empire Corp",
+                                                color = Color(0xFF38BDF8),
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            onDismiss()
+                                            onOpenAccountSetup()
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF38BDF8)),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text("Modifier", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     // Audio & Feedback
                     item {
                         SettingCategoryHeader("AUDIO & RETOURS TACTILES")
@@ -177,10 +250,19 @@ fun SettingsDialog(
                             onCheckedChange = { onToggleBatterySaver() }
                         )
                     }
+                    item {
+                        SettingToggleCard(
+                            title = "Particules & Animations Fluides",
+                            subtitle = "Affiche les effets de particules lors des clics",
+                            icon = Icons.Default.Speed,
+                            isChecked = !state.isBatterySaverEnabled,
+                            onCheckedChange = { onToggleBatterySaver() }
+                        )
+                    }
 
                     // Cloud & Network
                     item {
-                        SettingCategoryHeader("CLOUD & MULTIJOUEUR")
+                        SettingCategoryHeader("SERVEUR & CLASSEMENT MULTIJOUEUR")
                     }
                     item {
                         Card(
@@ -200,8 +282,8 @@ fun SettingsDialog(
                                     Icon(Icons.Default.CloudSync, contentDescription = null, tint = Color(0xFF4ADE80), modifier = Modifier.size(24.dp))
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Column {
-                                        Text("Serveur Mondial en Direct", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                        Text("🟢 Connecté • ${state.onlineScores.size} joueurs en ligne", color = Color(0xFF4ADE80), fontSize = 11.sp)
+                                        Text("Serveur Firebase Mondial", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        Text("🟢 Connecté • ${state.onlineScores.size} joueurs réels", color = Color(0xFF4ADE80), fontSize = 11.sp)
                                     }
                                 }
                                 Button(
@@ -227,8 +309,8 @@ fun SettingsDialog(
                             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1E293B))
                         ) {
                             Column(modifier = Modifier.padding(14.dp)) {
-                                Text("Code de Sauvegarde Cloud", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                Text("Exportez ou importez votre empire sur un autre appareil.", color = Color(0xFF94A3B8), fontSize = 11.sp)
+                                Text("Gestion de Sauvegarde Cloud / Local", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text("Exportez ou importez votre empire sur un autre appareil via un code texte.", color = Color(0xFF94A3B8), fontSize = 11.sp)
                                 Spacer(modifier = Modifier.height(10.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Button(
@@ -246,6 +328,21 @@ fun SettingsDialog(
                                         Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(16.dp))
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text("Exporter", fontSize = 11.sp)
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            importCodeText = ""
+                                            importErrorMsg = null
+                                            showImportDialog = true
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Importer", fontSize = 11.sp)
                                     }
                                 }
                                 exportMsg?.let { msg ->
@@ -333,6 +430,69 @@ fun SettingsDialog(
                     Text("Annuler")
                 }
             }
+        )
+    }
+
+    if (showImportDialog) {
+        AlertDialog(
+            onDismissRequest = { showImportDialog = false },
+            title = { Text("Importer une Sauvegarde", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text(
+                        text = "Collez ici votre code de sauvegarde JSON :",
+                        color = Color(0xFF94A3B8),
+                        fontSize = 12.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = importCodeText,
+                        onValueChange = {
+                            importCodeText = it
+                            importErrorMsg = null
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 4,
+                        placeholder = { Text("Collez le code ici...", color = Color(0xFF64748B), fontSize = 11.sp) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFF38BDF8),
+                            unfocusedBorderColor = Color(0xFF334155)
+                        )
+                    )
+                    importErrorMsg?.let { error ->
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(text = error, color = Color(0xFFEF4444), fontSize = 11.sp)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (importCodeText.isNotBlank()) {
+                            val success = onImportSave(importCodeText.trim())
+                            if (success) {
+                                showImportDialog = false
+                                onDismiss()
+                            } else {
+                                importErrorMsg = "Format de sauvegarde invalide."
+                            }
+                        } else {
+                            importErrorMsg = "Le code ne peut pas être vide."
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
+                ) {
+                    Text("Charger")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showImportDialog = false }) {
+                    Text("Annuler", color = Color(0xFF94A3B8))
+                }
+            },
+            containerColor = Color(0xFF0F172A)
         )
     }
 }
