@@ -117,18 +117,18 @@ data class Business(
     val currentCycleProgress: Float = 0f
 ) {
     val currentCost: Double
-        get() = if (level == 0) baseCost else baseCost * Math.pow(1.15, level.toDouble())
+        get() = if (level == 0) baseCost else baseCost * Math.pow(1.18, level.toDouble())
 
     val revenuePerSecond: Double
         get() {
             if (level == 0 || !isUnlocked) return 0.0
-            val speedFactor = 1.0 / cycleTimeSeconds.coerceAtLeast(0.1f)
+            val speedFactor = 1.0 / cycleTimeSeconds.coerceAtLeast(0.2f)
             val milestoneMultiplier = when {
-                level >= 200 -> 16.0
-                level >= 100 -> 8.0
-                level >= 50 -> 4.0
-                level >= 25 -> 2.0
-                level >= 10 -> 1.5
+                level >= 200 -> 8.0
+                level >= 100 -> 4.0
+                level >= 50 -> 2.5
+                level >= 25 -> 1.75
+                level >= 10 -> 1.25
                 else -> 1.0
             }
             return (baseRevenuePerSec * level * milestoneMultiplier) * speedFactor
@@ -229,10 +229,24 @@ data class StockItem(
     val history: List<Float> = listOf(),
     val ownedShares: Int = 0,
     val totalInvested: Double = 0.0,
-    val volatility: Float = 0.05f
+    val volatility: Float = 0.05f,
+    val isCrypto: Boolean = false,
+    val stakedShares: Int = 0
 ) {
     val changePercent: Double
         get() = if (previousPrice > 0) ((price - previousPrice) / previousPrice) * 100.0 else 0.0
+
+    val averageBuyPrice: Double
+        get() = if (ownedShares > 0) totalInvested / ownedShares else 0.0
+
+    val currentValue: Double
+        get() = (ownedShares + stakedShares) * price
+
+    val unrealizedProfitLoss: Double
+        get() = if (ownedShares > 0 && totalInvested > 0) currentValue - totalInvested else 0.0
+
+    val unrealizedProfitLossPercent: Double
+        get() = if (totalInvested > 0) (unrealizedProfitLoss / totalInvested) * 100.0 else 0.0
 }
 
 data class Executive(
@@ -259,6 +273,20 @@ data class CrisisEvent(
     val rewardMultiplier: Double = 2.5,
     val costRatio: Double = 0.10
 )
+
+enum class MarketCondition(
+    val title: String,
+    val opexMultiplier: Double,
+    val revenueMultiplier: Double,
+    val description: String,
+    val emoji: String
+) {
+    STABLE("Économie Stable", 1.0, 1.0, "Les marchés fonctionnent normalement.", "⚖️"),
+    INFLATION("Poussée d'Inflation", 1.6, 1.0, "Hausse des coûts opérationnels et de maintenance (+60%) !", "🔥"),
+    RECESSION("Récession Généralisée", 1.25, 0.70, "Baisse du chiffre d'affaires (-30%) et hausse des charges.", "📉"),
+    CRASH_IMMOBILIER("Crise Immobilière", 2.2, 0.85, "Explosion des frais de copropriété et taxes foncières (+120%) !", "🏛️"),
+    BOOM("Croissance Explosive", 0.85, 1.45, "Expansion économique ! Gains passifs dopés de +45% !", "🚀")
+}
 
 data class AdNetworkTier(
     val id: String,

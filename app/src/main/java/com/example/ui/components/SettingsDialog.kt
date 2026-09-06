@@ -376,7 +376,7 @@ fun SettingsDialog(
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Column {
                                         Text("Version Empire Tycoon", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                        Text("v1.0.1 • Production Build Stable", color = Color(0xFF94A3B8), fontSize = 11.sp)
+                                        Text("v${BuildConfig.VERSION_NAME} • Production Build Stable", color = Color(0xFF94A3B8), fontSize = 11.sp)
                                     }
                                 }
                                 TextButton(onClick = { UpdateManager.checkForUpdates(context, isManual = true) }) {

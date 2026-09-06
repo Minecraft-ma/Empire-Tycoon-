@@ -39,6 +39,9 @@ interface LeaderboardDao {
     @Query("DELETE FROM leaderboard_scores WHERE isPlayerRun = 1")
     suspend fun clearPlayerScores()
 
+    @Query("DELETE FROM leaderboard_scores WHERE isPlayerRun = 0")
+    suspend fun deleteNonPlayerScores()
+
     @Query("DELETE FROM leaderboard_scores")
     suspend fun clearAll()
 }

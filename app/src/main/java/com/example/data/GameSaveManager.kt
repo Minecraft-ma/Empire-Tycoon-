@@ -50,7 +50,8 @@ object GameSaveManager {
         unlockedTechIds: Set<String> = emptySet(),
         purchasedLuxuryIds: Set<String> = emptySet(),
         companyName: String = "Mon Entreprise",
-        sponsorshipContracts: List<SponsorshipContract> = emptyList()
+        sponsorshipContracts: List<SponsorshipContract> = emptyList(),
+        megaprojects: List<com.example.model.Megaproject> = emptyList()
     ): String {
         val root = JSONObject()
         root.put("version", 5)
@@ -101,6 +102,16 @@ object GameSaveManager {
         val luxArray = JSONArray()
         purchasedLuxuryIds.forEach { luxArray.put(it) }
         root.put("purchasedLuxuryIds", luxArray)
+
+        // Expansion: Megaprojects
+        val megaArray = JSONArray()
+        megaprojects.forEach { m ->
+            val obj = JSONObject()
+            obj.put("id", m.id)
+            obj.put("stage", m.stage)
+            megaArray.put(obj)
+        }
+        root.put("megaprojects", megaArray)
 
         // Productivity Upgrades
         val upgArray = JSONArray()
@@ -440,6 +451,22 @@ object GameSaveManager {
                 }
             }
 
+            // Megaprojects map: id -> stage
+            val megaprojectStages = mutableMapOf<String, Int>()
+            val megaArray = root.optJSONArray("megaprojects")
+            if (megaArray != null) {
+                for (i in 0 until megaArray.length()) {
+                    val obj = megaArray.optJSONObject(i)
+                    if (obj != null) {
+                        val id = obj.optString("id", "")
+                        val stage = obj.optInt("stage", 0)
+                        if (id.isNotEmpty()) {
+                            megaprojectStages[id] = stage
+                        }
+                    }
+                }
+            }
+
             // Sponsorship Contracts map: id -> Triple(isSigned, timeRemaining, totalEarned)
             val sponsorshipSavedData = mutableMapOf<String, Triple<Boolean, Int, Double>>()
             val sponsorArray = root.optJSONArray("sponsorshipContracts")
@@ -501,7 +528,8 @@ object GameSaveManager {
                 purchasedLuxuryIds = purchasedLuxuryIds,
                 companyName = companyName,
                 adLevels = adLevelsMap,
-                sponsorshipSavedData = sponsorshipSavedData
+                sponsorshipSavedData = sponsorshipSavedData,
+                megaprojectStages = megaprojectStages
             )
         } catch (e: Exception) {
             null
@@ -539,6 +567,7 @@ data class GameLoadResult(
     val purchasedLuxuryIds: Set<String> = emptySet(),
     val companyName: String = "Mon Entreprise",
     val adLevels: Map<String, Int> = emptyMap(),
-    val sponsorshipSavedData: Map<String, Triple<Boolean, Int, Double>> = emptyMap()
+    val sponsorshipSavedData: Map<String, Triple<Boolean, Int, Double>> = emptyMap(),
+    val megaprojectStages: Map<String, Int> = emptyMap()
 )
 

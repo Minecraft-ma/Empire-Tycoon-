@@ -71,6 +71,8 @@ fun TradingMarketScreen(
     state: GameUiState,
     onBuyStock: (ticker: String, qty: Int) -> Unit,
     onSellStock: (ticker: String, qty: Int) -> Unit,
+    onStakeCrypto: (ticker: String, qty: Int) -> Unit = { _, _ -> },
+    onUnstakeCrypto: (ticker: String, qty: Int) -> Unit = { _, _ -> },
     onPlaceAuctionBid: (String) -> Unit = {},
     onBuyoutAuctionLot: (String) -> Unit = {},
     onResetAuctionLot: (String) -> Unit = {},
@@ -136,7 +138,20 @@ fun TradingMarketScreen(
                 onOpenLiveWarModal = onOpenAuctionDialog
             )
         } else {
-            val totalPortfolioValue = state.stocks.sumOf { it.ownedShares * it.price }
+            var selectedCategoryFilter by remember { mutableIntStateOf(0) }
+
+            val totalPortfolioValue = state.stocks.sumOf { (it.ownedShares + it.stakedShares) * it.price }
+            val totalStocksValue = state.stocks.filter { !it.isCrypto }.sumOf { it.ownedShares * it.price }
+            val totalCryptoValue = state.stocks.filter { it.isCrypto }.sumOf { (it.ownedShares + it.stakedShares) * it.price }
+            val totalUnrealizedPnL = state.stocks.sumOf { it.unrealizedProfitLoss }
+            val totalStakingYieldPerSec = state.stocks.filter { it.stakedShares > 0 }.sumOf { it.stakedShares * it.price * 0.00005 }
+
+            val filteredStocks = when (selectedCategoryFilter) {
+                1 -> state.stocks.filter { !it.isCrypto }
+                2 -> state.stocks.filter { it.isCrypto }
+                3 -> state.stocks.filter { it.stakedShares > 0 || (it.isCrypto && it.ownedShares > 0) }
+                else -> state.stocks
+            }
 
             LazyColumn(
                 modifier = Modifier
@@ -145,80 +160,140 @@ fun TradingMarketScreen(
                 contentPadding = PaddingValues(DesignSystem.Padding.screenOuter),
                 verticalArrangement = Arrangement.spacedBy(DesignSystem.Spacing.small)
             ) {
-        item {
-            // Portfolio Summary Card
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("portfolio_summary_card"),
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = DarkSurface),
-                border = androidx.compose.foundation.BorderStroke(1.dp, DarkCardBorder),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(DesignSystem.Padding.cardCompact)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                item {
+                    // Portfolio Summary Card
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("portfolio_summary_card"),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, DarkCardBorder),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
-                        Column {
-                            Text(
-                                text = "SALLE DES MARCHÉS & CRYPTO",
-                                color = AmberDark,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = 0.5.sp
-                            )
-                            Text(
-                                text = "Portefeuille : ${MoneyFormatter.format(totalPortfolioValue)}",
-                                color = CyberCyan,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                        }
-
-                        Box(
+                        Column(
                             modifier = Modifier
-                                .background(Color(0xFF082F49), RoundedCornerShape(8.dp))
-                                .border(1.dp, CyberCyan.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                .fillMaxWidth()
+                                .padding(DesignSystem.Padding.cardCompact)
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.ShowChart,
-                                    contentDescription = null,
-                                    tint = CyberCyan,
-                                    modifier = Modifier.size(12.dp)
-                                )
-                                Spacer(modifier = Modifier.width(3.dp))
-                                Text(
-                                    text = "EN DIRECT",
-                                    color = CyberCyan,
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Black,
-                                    maxLines = 1,
-                                    softWrap = false
-                                )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "SALLE DES MARCHÉS & CRYPTO 24/7",
+                                        color = AmberDark,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Black,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                    Text(
+                                        text = "Portefeuille : ${MoneyFormatter.format(totalPortfolioValue)}",
+                                        color = CyberCyan,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .background(Color(0xFF082F49), RoundedCornerShape(8.dp))
+                                        .border(1.dp, CyberCyan.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.ShowChart,
+                                            contentDescription = null,
+                                            tint = CyberCyan,
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(3.dp))
+                                        Text(
+                                            text = "MARCHÉ EN DIRECT",
+                                            color = CyberCyan,
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Black,
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // Portfolio Metrics Row
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column {
+                                    Text("📈 Actions: ${MoneyFormatter.format(totalStocksValue)}", fontSize = 11.sp, color = TextSecondary)
+                                    Text("🪙 Cryptos: ${MoneyFormatter.format(totalCryptoValue)}", fontSize = 11.sp, color = TextSecondary)
+                                }
+                                Column(horizontalAlignment = Alignment.End) {
+                                    val isProfitable = totalUnrealizedPnL >= 0
+                                    val pnlColor = if (isProfitable) EmeraldDark else CrimsonFrenzy
+                                    Text(
+                                        text = "P&L Non Réalisé: ${if (isProfitable) "+" else ""}${MoneyFormatter.format(totalUnrealizedPnL)}",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = pnlColor
+                                    )
+                                    if (totalStakingYieldPerSec > 0) {
+                                        Text(
+                                            text = "🔒 Staking: +${MoneyFormatter.formatPerSec(totalStakingYieldPerSec)}",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = AmberDark
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Category Filter Chips
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                val filterLabels = listOf("Tous", "📈 Actions", "🪙 Crypto", "🔒 Staking")
+                                filterLabels.forEachIndexed { index, label ->
+                                    val isSelected = selectedCategoryFilter == index
+                                    val chipBg = if (isSelected) AmberDark else DarkSurfaceVariant
+                                    val chipText = if (isSelected) Color.Black else TextSecondary
+
+                                    OutlinedButton(
+                                        onClick = { selectedCategoryFilter = index },
+                                        shape = RoundedCornerShape(20.dp),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(containerColor = chipBg, contentColor = chipText),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, if (isSelected) AmberDark else DarkCardBorder),
+                                        modifier = Modifier.height(28.dp)
+                                    ) {
+                                        Text(text = label, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
                             }
                         }
                     }
                 }
-            }
-        }
 
-                items(state.stocks, key = { it.ticker }) { stock ->
+                items(filteredStocks, key = { it.ticker }) { stock ->
                     StockItemCard(
                         stock = stock,
                         playerCash = state.cash,
                         onBuy = { onBuyStock(stock.ticker, 1) },
                         onSell = { onSellStock(stock.ticker, 1) },
-                        onBuyMax = { onBuyStock(stock.ticker, 5) },
-                        onSellAll = { onSellStock(stock.ticker, stock.ownedShares) }
+                        onBuyMax = { onBuyStock(stock.ticker, 10) },
+                        onSellAll = { onSellStock(stock.ticker, stock.ownedShares) },
+                        onStakeOne = { onStakeCrypto(stock.ticker, 1) },
+                        onStakeAll = { onStakeCrypto(stock.ticker, stock.ownedShares) },
+                        onUnstakeAll = { onUnstakeCrypto(stock.ticker, stock.stakedShares) }
                     )
                 }
             }
@@ -233,7 +308,10 @@ fun StockItemCard(
     onBuy: () -> Unit,
     onSell: () -> Unit,
     onBuyMax: () -> Unit,
-    onSellAll: () -> Unit
+    onSellAll: () -> Unit,
+    onStakeOne: () -> Unit = {},
+    onStakeAll: () -> Unit = {},
+    onUnstakeAll: () -> Unit = {}
 ) {
     val isPositive = stock.changePercent >= 0
     val trendColor = if (isPositive) EmeraldDark else CrimsonFrenzy
@@ -244,7 +322,7 @@ fun StockItemCard(
             .testTag("stock_card_${stock.ticker}"),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, DarkCardBorder),
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (stock.isCrypto) AmberDark.copy(alpha = 0.5f) else DarkCardBorder),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -252,7 +330,7 @@ fun StockItemCard(
                 .fillMaxWidth()
                 .padding(DesignSystem.Padding.cardCompact)
         ) {
-            // Header Row: Ticker + Price + 24h Change
+            // Header Row: Badge + Ticker + Price + 24h Change
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -260,18 +338,24 @@ fun StockItemCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .background(if (stock.isCrypto) Color(0xFF78350F) else Color(0xFF064E3B), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 4.dp, vertical = 1.dp)
+                        ) {
+                            Text(
+                                text = if (stock.isCrypto) "🪙 CRYPTO" else "📈 ACTION",
+                                color = if (stock.isCrypto) AmberDark else EmeraldDark,
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = stock.ticker,
                             color = Color.White,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Black
-                        )
-                        Spacer(modifier = Modifier.width(DesignSystem.Spacing.extraSmall))
-                        Text(
-                            text = stock.category,
-                            color = TextSecondary,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
                         )
                     }
                     Text(
@@ -344,17 +428,33 @@ fun StockItemCard(
 
             Spacer(modifier = Modifier.height(DesignSystem.Spacing.extraSmall))
 
-            // Holdings info
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            // Holdings and P&L info
+            val totalOwned = stock.ownedShares + stock.stakedShares
+            if (totalOwned > 0) {
+                val pnlColor = if (stock.unrealizedProfitLoss >= 0) EmeraldDark else CrimsonFrenzy
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Possédé : ${stock.ownedShares} (${MoneyFormatter.format(stock.ownedShares * stock.price)})",
+                        color = TextSecondary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "P&L : ${if (stock.unrealizedProfitLoss >= 0) "+" else ""}${MoneyFormatter.format(stock.unrealizedProfitLoss)} (${String.format("%.1f", stock.unrealizedProfitLossPercent)}%)",
+                        color = pnlColor,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+            } else {
                 Text(
-                    text = "Possédé : ${stock.ownedShares} (${MoneyFormatter.format(stock.ownedShares * stock.price)})",
+                    text = "Possédé : 0 titre",
                     color = TextSecondary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 11.sp
                 )
             }
 
@@ -439,6 +539,66 @@ fun StockItemCard(
                         .testTag("sell_all_stock_${stock.ticker}")
                 ) {
                     Text(text = "TOUT", fontSize = 9.sp, fontWeight = FontWeight.Black, maxLines = 1, softWrap = false)
+                }
+            }
+
+            if (stock.isCrypto) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(DarkSurfaceVariant, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(
+                            text = "🔒 Staking: ${stock.stakedShares} token(s)",
+                            color = AmberDark,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (stock.stakedShares > 0) {
+                            val yieldSec = stock.stakedShares * stock.price * 0.00005
+                            Text(
+                                text = "+${MoneyFormatter.formatPerSec(yieldSec)}",
+                                color = EmeraldDark,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                        }
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Button(
+                            onClick = onStakeAll,
+                            enabled = stock.ownedShares > 0,
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = AmberDark,
+                                contentColor = Color.Black,
+                                disabledContainerColor = DarkSurfaceVariant,
+                                disabledContentColor = TextMuted
+                            ),
+                            shape = RoundedCornerShape(6.dp),
+                            modifier = Modifier.height(26.dp)
+                        ) {
+                            Text("STAKER TOUT", fontSize = 9.sp, fontWeight = FontWeight.Black)
+                        }
+
+                        OutlinedButton(
+                            onClick = onUnstakeAll,
+                            enabled = stock.stakedShares > 0,
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, if (stock.stakedShares > 0) AmberDark else DarkCardBorder),
+                            shape = RoundedCornerShape(6.dp),
+                            modifier = Modifier.height(26.dp)
+                        ) {
+                            Text("RETIRER", fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
         }

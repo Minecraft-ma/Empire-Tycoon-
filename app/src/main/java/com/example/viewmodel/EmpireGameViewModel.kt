@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.GameRepository
@@ -134,6 +135,11 @@ data class GameUiState(
     val isBatterySaverEnabled: Boolean = false,
     val isSettingsDialogOpen: Boolean = false,
     val isAccountSetupDialogOpen: Boolean = false,
+    val isUserAuthenticated: Boolean = false,
+    val isUserAnonymous: Boolean = true,
+    val authUserId: String = "",
+    val authUserEmail: String? = null,
+    val authDisplayName: String? = null,
     val companyName: String = "Mon Entreprise",
     val countryFlag: String = "🇫🇷",
     val avatarEmoji: String = "💼",
@@ -142,7 +148,9 @@ data class GameUiState(
     val lastWheelSpinTimestampEpoch: Long = 0L,
     val sponsorshipContracts: List<SponsorshipContract> = GameRepository.getDefaultSponsorshipContracts(),
     val isSponsorshipDialogOpen: Boolean = false,
-    val selectedSponsorshipContractId: String? = null
+    val selectedSponsorshipContractId: String? = null,
+    val marketCondition: com.example.model.MarketCondition = com.example.model.MarketCondition.STABLE,
+    val marketConditionTimeRemainingSec: Int = 0
 ) {
     val isDailySpinAvailable: Boolean
         get() {
@@ -198,6 +206,12 @@ data class GameUiState(
     val fullyAcquiredTakeoversCount: Int
         get() = corporateTakeovers.count { it.isFullyAcquired }
 
+    val nextPrestigeThreshold: Double
+        get() = 1_000_000.0 * Math.pow(6.0, prestigeLevel.toDouble())
+
+    val canPrestige: Boolean
+        get() = totalCashEarned >= nextPrestigeThreshold
+
     val cashPerTap: Double
         get() {
             val execClickBoost = executives.filter { it.hired }.sumOf { it.clickPowerBoost }
@@ -206,12 +220,13 @@ data class GameUiState(
             val upgradeClickMultiplier = 1.0 + productivityUpgrades
                 .filter { it.category == UpgradeCategory.CLICK_POWER }
                 .sumOf { it.level * it.multiplierPerLevel }
-            val base = (clickPower + execClickBoost) * (1.0 + luxuryClickBoost + techClickBoost) * upgradeClickMultiplier
+            val passiveSynergy = totalPassiveRevenuePerSec * 0.002
+            val base = (clickPower + execClickBoost + passiveSynergy) * (1.0 + luxuryClickBoost + techClickBoost) * upgradeClickMultiplier
             val frenzyUpgradeExtra = if (isFrenzyActive) {
                 val frenzyUpg = productivityUpgrades.find { it.id == "upg_frenzy_amplifier" }?.level ?: 0
-                1.0 + (frenzyUpg * 0.30)
+                1.0 + (frenzyUpg * 0.20)
             } else 1.0
-            val frenzyMult = (if (isFrenzyActive) 10.0 else 1.0) * frenzyUpgradeExtra
+            val frenzyMult = (if (isFrenzyActive) 3.0 else 1.0) * frenzyUpgradeExtra
             val adClickBoost = 1.0 + adNetworks.filter { it.isUnlocked }.sumOf { it.clickBonusMultiplier * it.level }
             return base * frenzyMult * globalMultiplier * prestigeBonusMultiplier * adClickBoost
         }
@@ -251,6 +266,12 @@ data class GameUiState(
                     sum += contract.directPayoutPerSec
                 }
             }
+            // Crypto Staking Yield
+            for (stock in stocks) {
+                if (stock.stakedShares > 0) {
+                    sum += stock.stakedShares * stock.price * 0.00005 // Staking passive yield per sec
+                }
+            }
 
             val executiveBoost = executives.filter { it.hired }.sumOf { it.passiveRevenueBoost }
             val sponsorshipMultiplierBoost = sponsorshipContracts.filter { it.isActive }.sumOf { it.passiveIncomeMultiplier }
@@ -268,8 +289,22 @@ data class GameUiState(
                 .filter { it.category == UpgradeCategory.PASSIVE_BUSINESS }
                 .sumOf { it.level * it.multiplierPerLevel }
             val netMultiplier = (1.0 + executiveBoost + sponsorshipMultiplierBoost + techBoost + expandedTechBoost + luxuryPassiveBoost + auctionMultiplierBoost + megaBoost) * upgradePassiveMult * prestigeBonusMultiplier * globalMultiplier * (if (isFrenzyActive) 5.0 else 1.0)
-            return sum * netMultiplier
+            return sum * netMultiplier * marketCondition.revenueMultiplier
         }
+
+    val totalOperatingExpensesPerSec: Double
+        get() {
+            val bizExpenses = businesses.filter { it.isUnlocked }.sumOf { biz ->
+                (biz.baseRevenuePerSec * 0.12 * biz.level) + (if (biz.managerHired) biz.baseRevenuePerSec * biz.level * 0.04 else 0.0)
+            }
+            val luxuryMaintenance = luxuryAssets.filter { it.isPurchased }.sumOf { lux ->
+                lux.cost * 0.00003 // Upkeep fee
+            }
+            return (bizExpenses + luxuryMaintenance) * marketCondition.opexMultiplier
+        }
+
+    val netPassiveRevenuePerSec: Double
+        get() = totalPassiveRevenuePerSec - totalOperatingExpensesPerSec
 
     val netWorth: Double
         get() {
@@ -292,6 +327,7 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
     private val leaderboardRepository = LeaderboardRepository(database.leaderboardDao())
     private val onlineLeaderboardService = OnlineLeaderboardService(application)
     private val gameDataStoreManager = GameDataStoreManager(application)
+    val firebaseAuthService = com.example.data.auth.FirebaseAuthService(application)
 
     private var lastTapTime: Long = 0L
     private val vibrator = application.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
@@ -299,14 +335,77 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
     init {
         SoundManager.isSoundEnabled = _uiState.value.soundEnabled
         loadSavedGame()
+        observeAuthState()
         observeLeaderboard()
         fetchOnlineLeaderboard()
+        startFirestoreLeaderboardRealtimeSync()
         startMainGameLoop()
         startStockMarketLoop()
         startSponsorRotationLoop()
         startCrisisEventScheduler()
         startNewsRotationLoop()
         startAutoSaveLoop()
+        startLeaderboardAutoSyncLoop()
+    }
+
+    private fun observeAuthState() {
+        viewModelScope.launch {
+            firebaseAuthService.authState.collect { auth ->
+                _uiState.update {
+                    it.copy(
+                        isUserAuthenticated = auth.isAuthenticated,
+                        isUserAnonymous = auth.isAnonymous,
+                        authUserId = auth.userId,
+                        authUserEmail = auth.email,
+                        authDisplayName = auth.displayName
+                    )
+                }
+            }
+        }
+        viewModelScope.launch {
+            if (firebaseAuthService.getCurrentUser() == null) {
+                firebaseAuthService.signInAnonymously()
+            }
+        }
+    }
+
+    private fun startFirestoreLeaderboardRealtimeSync() {
+        viewModelScope.launch {
+            try {
+                onlineLeaderboardService.observeFirestoreLeaderboard().collect { firestoreScores ->
+                    if (firestoreScores.isNotEmpty()) {
+                        val currentScores = _uiState.value.onlineScores.toMutableList()
+                        firestoreScores.forEach { fScore ->
+                            val idx = currentScores.indexOfFirst {
+                                it.playerId == fScore.playerId ||
+                                (it.playerName.isNotBlank() && it.playerName.equals(fScore.playerName, ignoreCase = true) && !it.playerId.startsWith("seed_"))
+                            }
+                            if (idx >= 0) {
+                                currentScores[idx] = fScore
+                            } else {
+                                currentScores.add(fScore)
+                            }
+                        }
+                        val sorted = currentScores.sortedByDescending { it.netWorth.coerceAtLeast(it.totalCashEarned) }
+                        _uiState.update { it.copy(onlineScores = sorted) }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.d("EmpireGameViewModel", "Firestore realtime sync note: ${e.message}")
+            }
+        }
+    }
+
+    private fun startLeaderboardAutoSyncLoop() {
+        viewModelScope.launch {
+            delay(2000)
+            while (true) {
+                try {
+                    publishMyScoreToOnlineLeaderboard(silent = true)
+                } catch (_: Exception) {}
+                delay(35000)
+            }
+        }
     }
 
     private fun observeLeaderboard() {
@@ -431,6 +530,11 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
                 } else def
             }
 
+            val updatedMegaprojects = GameRepository.getDefaultMegaprojects().map { def ->
+                val savedStage = saved.megaprojectStages[def.id] ?: 0
+                def.copy(stage = savedStage.coerceIn(0, def.maxStage))
+            }
+
             // Restore daily missions if same day epoch, or generate fresh set
             val isSameDay = saved.lastMissionDayEpoch == currentEpochDay && saved.lastMissionDayEpoch > 0L
             val initialMissions = if (isSameDay && saved.missionSavedData.isNotEmpty()) {
@@ -481,7 +585,7 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
             val rawTotal = saved.totalCashEarned
             val sanitizedCash = if (rawCash.isNaN() || rawCash.isInfinite() || rawCash > 1e18 || rawCash < 0.0) 250.0 else rawCash
             val sanitizedTotal = if (rawTotal.isNaN() || rawTotal.isInfinite() || rawTotal > 1e18 || rawTotal < 0.0) sanitizedCash else rawTotal
-            val sanitizedPrestigeMult = if (saved.prestigeBonusMultiplier.isNaN() || saved.prestigeBonusMultiplier.isInfinite() || saved.prestigeBonusMultiplier > 100.0) 1.0 + (saved.prestigeLevel * 0.20) else saved.prestigeBonusMultiplier
+            val sanitizedPrestigeMult = 1.0 + (saved.prestigeLevel * 0.50)
 
             val savedCompany = onlineLeaderboardService.getSavedCompanyName().ifBlank { saved.companyName }
             val savedFlag = onlineLeaderboardService.getSavedCountryFlag()
@@ -521,7 +625,8 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
                     lastMissionDayEpoch = currentEpochDay,
                     dailyCashEarned = if (isSameDay) saved.dailyCashEarned else 0.0,
                     lastWheelSpinTimestampEpoch = saved.lastWheelSpinTimestampEpoch,
-                    sponsorshipContracts = updatedSponsorships
+                    sponsorshipContracts = updatedSponsorships,
+                    megaprojects = updatedMegaprojects
                 )
             }
             SoundManager.isSoundEnabled = saved.soundEnabled
@@ -601,7 +706,8 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
             unlockedTechIds = state.expandedTechNodes.filter { it.isUnlocked }.map { it.id }.toSet(),
             purchasedLuxuryIds = state.luxuryAssets.filter { it.isPurchased }.map { it.id }.toSet(),
             companyName = state.companyName,
-            sponsorshipContracts = state.sponsorshipContracts
+            sponsorshipContracts = state.sponsorshipContracts,
+            megaprojects = state.megaprojects
         )
 
         // Asynchronously persist currency and upgrade status to DataStore
@@ -652,7 +758,7 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
                 delay(delayMillis)
 
                 val state = _uiState.value
-                val passiveRevenuePerTick = state.totalPassiveRevenuePerSec * elapsedSeconds.toDouble()
+                val passiveRevenuePerTick = state.netPassiveRevenuePerSec * elapsedSeconds.toDouble()
 
                 // Update business cycle progress
                 val updatedBusinesses = state.businesses.map { biz ->
@@ -822,7 +928,37 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
                             showFeedback(completedContractMessage!!)
                         }
 
+                        // Market Condition Timer and Economic Events
+                        var newMarketCondition = current.marketCondition
+                        var newMarketTime = max(0, current.marketConditionTimeRemainingSec - 1)
+                        var marketFeedback: String? = null
+                        var propertyDeduction = 0.0
+
+                        if (newMarketTime == 0 && newMarketCondition != com.example.model.MarketCondition.STABLE) {
+                            newMarketCondition = com.example.model.MarketCondition.STABLE
+                            marketFeedback = "⚖️ L'économie se stabilise. Fin de la crise."
+                        } else if (newMarketCondition == com.example.model.MarketCondition.STABLE && Random.nextFloat() < 0.008f) {
+                            val randomEvent = com.example.model.MarketCondition.entries.filter { it != com.example.model.MarketCondition.STABLE }.random()
+                            newMarketCondition = randomEvent
+                            newMarketTime = 40
+                            marketFeedback = "${randomEvent.emoji} ${randomEvent.title.uppercase()} : ${randomEvent.description}"
+
+                            if (randomEvent == com.example.model.MarketCondition.CRASH_IMMOBILIER && current.totalRealEstateEmpireValue > 0) {
+                                propertyDeduction = (current.totalRealEstateEmpireValue * 0.015).coerceAtMost(current.cash * 0.20)
+                                if (propertyDeduction > 0) {
+                                    marketFeedback += " Prelevement charges de copropriété : -${MoneyFormatter.format(propertyDeduction)}"
+                                }
+                            }
+                        }
+
+                        if (marketFeedback != null) {
+                            triggerHapticFeedback(isStrong = true)
+                        }
+
                         current.copy(
+                            cash = max(0.0, current.cash - propertyDeduction),
+                            marketCondition = newMarketCondition,
+                            marketConditionTimeRemainingSec = newMarketTime,
                             crisisTimeRemainingSec = newCrisisTime,
                             activeCrisis = newCrisis,
                             multiplierTimeRemainingSec = newMultTime,
@@ -834,7 +970,8 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
                             sponsorshipContracts = updatedSponsorships,
                             careerStats = updatedStats,
                             timeUntilDailyResetFormatted = countdownFormatted,
-                            lastMissionDayEpoch = if (current.lastMissionDayEpoch == 0L) currentEpochDay else current.lastMissionDayEpoch
+                            lastMissionDayEpoch = if (current.lastMissionDayEpoch == 0L) currentEpochDay else current.lastMissionDayEpoch,
+                            feedbackMessage = marketFeedback ?: current.feedbackMessage
                         )
                     }
                 }
@@ -847,19 +984,36 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
     private fun startStockMarketLoop() {
         viewModelScope.launch {
             while (true) {
-                delay(3500)
+                delay(3000)
                 _uiState.update { current ->
+                    val isMarketBullRun = Random.nextFloat() < 0.05f
+                    val isCryptoCrash = Random.nextFloat() < 0.03f
+
                     val updatedStocks = current.stocks.map { stock ->
-                        val changeFactor = 1.0 + ((Random.nextFloat() * 2f - 0.98f) * stock.volatility)
-                        val newPrice = max(1.0, stock.price * changeFactor)
-                        val newHistory = (stock.history + newPrice.toFloat()).takeLast(12)
+                        val baseVolatility = if (stock.isCrypto) stock.volatility * 1.5f else stock.volatility
+                        val extraMultiplier = when {
+                            isMarketBullRun && stock.isCrypto -> 1.15 // +15% surge
+                            isCryptoCrash && stock.isCrypto -> 0.85 // -15% crash
+                            else -> 1.0
+                        }
+                        val changeFactor = (1.0 + ((Random.nextFloat() * 2f - 0.98f) * baseVolatility)) * extraMultiplier
+                        val newPrice = max(if (stock.isCrypto) 0.0001 else 1.0, stock.price * changeFactor)
+                        val newHistory = (stock.history + newPrice.toFloat()).takeLast(14)
                         stock.copy(
                             previousPrice = stock.price,
                             price = newPrice,
                             history = newHistory
                         )
                     }
-                    current.copy(stocks = updatedStocks)
+
+                    var feedback: String? = current.feedbackMessage
+                    if (isMarketBullRun) feedback = "🚀 BULL RUN CRYPTO EN COURS ! Explosion des cours !"
+                    if (isCryptoCrash) feedback = "📉 CRASH FLASH SUR LA CRYPTO ! Opportunité d'achat !"
+
+                    current.copy(
+                        stocks = updatedStocks,
+                        feedbackMessage = feedback ?: current.feedbackMessage
+                    )
                 }
             }
         }
@@ -966,20 +1120,16 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
         lastTapTime = now
 
         val newCombo = if (timeDiff < 600) {
-            (_uiState.value.comboStreak + 1).coerceAtMost(50)
+            (_uiState.value.comboStreak + 1).coerceAtMost(30)
         } else {
             1
         }
 
-        val isCrit = Random.nextFloat() < 0.15f
-        val critFactor = if (isCrit) 3.5 else 1.0
+        val isCrit = Random.nextFloat() < 0.12f
+        val critFactor = if (isCrit) 2.0 else 1.0
+        val comboMultiplier = 1.0 + (newCombo * 0.015)
 
-        val execClickBoost = 1.0 + _uiState.value.executives.filter { it.hired }.sumOf { it.clickPowerBoost }
-        val frenzyBoost = if (_uiState.value.isFrenzyActive) 10.0 else 1.0
-        val comboMultiplier = 1.0 + (newCombo * 0.05)
-
-        val baseTapValue = max(1.0, (_uiState.value.totalPassiveRevenuePerSec * 0.08) + _uiState.value.clickPower)
-        val earned = baseTapValue * execClickBoost * frenzyBoost * critFactor * comboMultiplier * _uiState.value.globalMultiplier
+        val earned = _uiState.value.cashPerTap * critFactor * comboMultiplier
 
         var newFrenzy = _uiState.value.frenzyProgress + (if (_uiState.value.isFrenzyActive) 0f else 0.045f)
         var isFrenzyTriggered = _uiState.value.isFrenzyActive
@@ -1237,6 +1387,56 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    fun stakeCrypto(ticker: String, quantity: Int = 1) {
+        val state = _uiState.value
+        val stock = state.stocks.find { it.ticker == ticker } ?: return
+        if (stock.ownedShares >= quantity) {
+            triggerHapticFeedback(isStrong = false)
+            val updated = state.stocks.map {
+                if (it.ticker == ticker) {
+                    it.copy(
+                        ownedShares = it.ownedShares - quantity,
+                        stakedShares = it.stakedShares + quantity
+                    )
+                } else it
+            }
+            _uiState.update {
+                it.copy(
+                    stocks = updated,
+                    feedbackMessage = "🔒 $quantity token(s) ${stock.ticker} placés en Staking (+10% APY) !"
+                )
+            }
+            saveCurrentGameState()
+        } else {
+            showFeedback("Nombre de tokens insuffisants pour le staking")
+        }
+    }
+
+    fun unstakeCrypto(ticker: String, quantity: Int = 1) {
+        val state = _uiState.value
+        val stock = state.stocks.find { it.ticker == ticker } ?: return
+        if (stock.stakedShares >= quantity) {
+            triggerHapticFeedback(isStrong = false)
+            val updated = state.stocks.map {
+                if (it.ticker == ticker) {
+                    it.copy(
+                        stakedShares = it.stakedShares - quantity,
+                        ownedShares = it.ownedShares + quantity
+                    )
+                } else it
+            }
+            _uiState.update {
+                it.copy(
+                    stocks = updated,
+                    feedbackMessage = "🔓 $quantity token(s) ${stock.ticker} retirés du Staking !"
+                )
+            }
+            saveCurrentGameState()
+        } else {
+            showFeedback("Pas de tokens en Staking à retirer")
+        }
+    }
+
     fun hireExecutive(execId: String) {
         val state = _uiState.value
         val exec = state.executives.find { it.id == execId } ?: return
@@ -1464,8 +1664,8 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
 
     fun triggerPrestige() {
         val state = _uiState.value
-        val requiredCash = 50_000.0 * (state.prestigeLevel + 1) * (state.prestigeLevel + 1)
-        if (state.totalCashEarned < requiredCash) {
+        val requiredCash = state.nextPrestigeThreshold
+        if (!state.canPrestige) {
             showFeedback("Vous devez avoir cumulé au moins ${MoneyFormatter.format(requiredCash)} pour débloquer ce Prestige !")
             return
         }
@@ -1487,23 +1687,44 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
 
         triggerHapticFeedback(isStrong = true)
         val newPrestigeLevel = state.prestigeLevel + 1
-        val newMultiplier = 1.0 + (newPrestigeLevel * 1.5)
+        val newMultiplier = 1.0 + (newPrestigeLevel * 0.50)
         val resetBusinesses = GameRepository.getDefaultBusinesses()
+        val resetLuxury = GameRepository.getDefaultLuxuryAssets()
+        val resetTakeovers = GameRepository.getDefaultCorporateTakeovers()
+        val resetAuctions = GameRepository.getDefaultAuctionLots()
+        val resetAds = GameRepository.getDefaultAdNetworks()
+        val resetStocks = GameRepository.getDefaultStocks()
+        val resetSponsorships = GameRepository.getDefaultSponsorshipContracts()
+        val resetMegaprojects = GameRepository.getDefaultMegaprojects()
         val newPrestigeResets = state.careerStats.totalPrestigeResets + 1
+        val startingCash = 250.0
 
         _uiState.update {
-            val startingCash = 100.0 * newMultiplier
             it.copy(
                 cash = startingCash,
                 totalCashEarned = startingCash,
                 prestigeLevel = newPrestigeLevel,
                 prestigeBonusMultiplier = newMultiplier,
                 businesses = resetBusinesses,
+                luxuryAssets = resetLuxury,
+                corporateTakeovers = resetTakeovers,
+                auctionLots = resetAuctions,
+                adNetworks = resetAds,
+                stocks = resetStocks,
+                sponsorshipContracts = resetSponsorships,
+                megaprojects = resetMegaprojects,
+                clickLevel = 1,
+                clickPower = 1.0,
+                comboStreak = 0,
+                frenzyProgress = 0f,
+                isFrenzyActive = false,
+                frenzyTimeRemainingSec = 0,
                 globalMultiplier = 1.0,
+                multiplierTimeRemainingSec = 0,
                 activeCrisis = null,
                 activeMiniGame = null,
                 careerStats = it.careerStats.copy(totalPrestigeResets = newPrestigeResets),
-                feedbackMessage = "Vente d'empire réussie ! Prestige Niveau $newPrestigeLevel (Multiplicateur x$newMultiplier) !"
+                feedbackMessage = "🏛️ Vente d'empire réussie ! Prestige P$newPrestigeLevel activé (Bonus permanent x${String.format(java.util.Locale.US, "%.1f", newMultiplier)}) !"
             )
         }
         saveCurrentGameState()
@@ -2265,6 +2486,8 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
                     playerCurrentRank = rank
                 )
             }
+            // Auto-publish direct sync immediately when opening leaderboard
+            publishMyScoreToOnlineLeaderboard(silent = true)
         }
     }
 
@@ -2317,7 +2540,7 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             _uiState.update { it.copy(isOnlineSyncing = true) }
             val result = onlineLeaderboardService.fetchGlobalLeaderboard()
-            val list = result.getOrDefault(onlineLeaderboardService.getSeedRealPlayers())
+            val list = result.getOrDefault(emptyList())
             _uiState.update {
                 it.copy(
                     onlineScores = list,
@@ -2325,6 +2548,11 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
                 )
             }
         }
+    }
+
+    fun syncLeaderboardWithFirestore() {
+        fetchOnlineLeaderboard()
+        publishMyScoreToOnlineLeaderboard(silent = true)
     }
 
     fun openAccountSetupDialog() {
@@ -2360,17 +2588,18 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
         saveCurrentGameState()
     }
 
-    fun publishMyScoreToOnlineLeaderboard() {
+    fun publishMyScoreToOnlineLeaderboard(silent: Boolean = false) {
         viewModelScope.launch {
             _uiState.update { it.copy(isOnlineSyncing = true) }
             val state = _uiState.value
+            val netWorth = state.totalCashEarned * 1.5 + state.totalPassiveRevenuePerSec * 1000
             val onlineScore = OnlinePlayerScore(
                 playerId = onlineLeaderboardService.myPlayerId,
                 playerName = state.playerName.ifBlank { "Player234" },
                 companyName = state.companyName.ifBlank { "Mon Entreprise" },
                 countryFlag = state.countryFlag.ifBlank { "🇫🇷" },
                 avatarEmoji = state.avatarEmoji.ifBlank { "💼" },
-                netWorth = state.totalCashEarned * 1.5 + state.totalPassiveRevenuePerSec * 1000,
+                netWorth = netWorth,
                 totalCashEarned = state.totalCashEarned,
                 peakRevenuePerSec = state.totalPassiveRevenuePerSec,
                 prestigeLevel = state.prestigeLevel,
@@ -2381,7 +2610,21 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
                 playerTitle = if (state.prestigeLevel > 5) "Magnat Légendaire" else "Entrepreneur Actif",
                 isVerifiedUser = true
             )
+            // Persist to Cloud Service & Firestore
             val result = onlineLeaderboardService.publishPlayerScore(onlineScore)
+            firebaseAuthService.syncUserProfileToFirestore(
+                playerName = onlineScore.playerName,
+                companyName = onlineScore.companyName,
+                avatarEmoji = onlineScore.avatarEmoji,
+                countryFlag = onlineScore.countryFlag,
+                netWorth = onlineScore.netWorth,
+                totalCashEarned = onlineScore.totalCashEarned,
+                peakRevenuePerSec = onlineScore.peakRevenuePerSec,
+                prestigeLevel = onlineScore.prestigeLevel,
+                businessesCount = onlineScore.businessesCount,
+                propertiesCount = onlineScore.propertiesCount,
+                contractsSignedCount = onlineScore.contractsSignedCount
+            )
             val list = result.getOrDefault(state.onlineScores)
             _uiState.update {
                 it.copy(
@@ -2389,7 +2632,31 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
                     isOnlineSyncing = false
                 )
             }
-            showFeedback("🌍 Score publié avec succès sur Firebase Realtime !")
+            if (!silent) {
+                showFeedback("⚡ Score auto-synchronisé sur Firebase Firestore !")
+            }
+        }
+    }
+
+    fun signInWithGoogle() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isOnlineSyncing = true) }
+            val result = firebaseAuthService.signInWithGoogle()
+            if (result.isSuccess) {
+                val user = result.getOrNull()
+                showFeedback("✅ Connecté à Google : ${user?.displayName ?: "Joueur"}")
+                publishMyScoreToOnlineLeaderboard(silent = true)
+            } else {
+                showFeedback("Session Firebase Cloud active.")
+            }
+            _uiState.update { it.copy(isOnlineSyncing = false) }
+        }
+    }
+
+    fun signOutAuth() {
+        viewModelScope.launch {
+            firebaseAuthService.signOut()
+            showFeedback("Compte déconnecté.")
         }
     }
 

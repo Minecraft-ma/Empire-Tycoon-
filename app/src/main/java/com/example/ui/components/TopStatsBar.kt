@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.TrendingUp
@@ -164,25 +166,30 @@ fun TopStatsBar(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // Passive Flow Pill
+                // Passive Net Flow Pill (Revenue minus OpEx)
+                val isDeficit = state.netPassiveRevenuePerSec < 0
+                val flowBgColor = if (isDeficit) Color(0xFF450A0A) else Color(0xFF064E3B)
+                val flowBorderColor = if (isDeficit) CrimsonFrenzy else EmeraldPrimary.copy(alpha = 0.6f)
+                val flowTextColor = if (isDeficit) CrimsonFrenzy else EmeraldDark
+
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF064E3B))
-                        .border(1.dp, EmeraldPrimary.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+                        .background(flowBgColor)
+                        .border(1.dp, flowBorderColor, RoundedCornerShape(12.dp))
                         .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = Icons.Default.TrendingUp,
+                            imageVector = if (isDeficit) Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
                             contentDescription = null,
-                            tint = EmeraldDark,
+                            tint = flowTextColor,
                             modifier = Modifier.size(15.dp)
                         )
                         Spacer(modifier = Modifier.width(5.dp))
                         Text(
-                            text = "+${MoneyFormatter.formatPerSec(state.totalPassiveRevenuePerSec)}",
-                            color = EmeraldDark,
+                            text = "${if (!isDeficit) "+" else ""}${MoneyFormatter.formatPerSec(state.netPassiveRevenuePerSec)}",
+                            color = flowTextColor,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Black,
                             maxLines = 1,
@@ -202,6 +209,35 @@ fun TopStatsBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // Active Macro-Economic Condition Pill
+                if (state.marketCondition != com.example.model.MarketCondition.STABLE) {
+                    val cond = state.marketCondition
+                    val isBad = cond.opexMultiplier > 1.0 || cond.revenueMultiplier < 1.0
+                    val pillBg = if (isBad) Color(0xFF7F1D1D) else Color(0xFF065F46)
+                    val pillText = if (isBad) Color(0xFFFCA5A5) else Color(0xFF6EE7B7)
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(pillBg)
+                            .border(1.dp, pillText.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = cond.emoji, fontSize = 13.sp)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "${cond.title.uppercase()} (${state.marketConditionTimeRemainingSec}s)",
+                                color = pillText,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+                    }
+                }
+
                 // Quêtes VIP Button
                 Box(
                     modifier = Modifier

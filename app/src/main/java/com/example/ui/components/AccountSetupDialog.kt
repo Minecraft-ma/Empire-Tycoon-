@@ -20,11 +20,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -44,7 +46,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -60,33 +61,14 @@ import com.example.viewmodel.GameUiState
 fun AccountSetupDialog(
     state: GameUiState,
     onDismiss: () -> Unit,
+    onSignInGoogle: () -> Unit = {},
+    onSignOut: () -> Unit = {},
     onSaveAccount: (name: String, company: String, flag: String, avatar: String) -> Unit
 ) {
-    AccountSetupDialog(
-        initialPlayerName = state.playerName,
-        initialCompanyName = state.companyName,
-        initialCountryFlag = state.countryFlag,
-        initialAvatarEmoji = state.avatarEmoji,
-        currentNetWorth = state.cash,
-        onSaveAccount = onSaveAccount,
-        onDismiss = onDismiss
-    )
-}
-
-@Composable
-fun AccountSetupDialog(
-    initialPlayerName: String,
-    initialCompanyName: String,
-    initialCountryFlag: String,
-    initialAvatarEmoji: String,
-    currentNetWorth: Double,
-    onSaveAccount: (name: String, company: String, flag: String, avatar: String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    var playerName by remember { mutableStateOf(if (initialPlayerName.isNotBlank()) initialPlayerName else "Player234") }
-    var companyName by remember { mutableStateOf(if (initialCompanyName.isNotBlank()) initialCompanyName else "Mon Entreprise") }
-    var selectedFlag by remember { mutableStateOf(if (initialCountryFlag.isNotBlank()) initialCountryFlag else "🇫🇷") }
-    var selectedAvatar by remember { mutableStateOf(if (initialAvatarEmoji.isNotBlank()) initialAvatarEmoji else "💼") }
+    var playerName by remember { mutableStateOf(if (state.playerName.isNotBlank()) state.playerName else "Player234") }
+    var companyName by remember { mutableStateOf(if (state.companyName.isNotBlank()) state.companyName else "Mon Entreprise") }
+    var selectedFlag by remember { mutableStateOf(if (state.countryFlag.isNotBlank()) state.countryFlag else "🇫🇷") }
+    var selectedAvatar by remember { mutableStateOf(if (state.avatarEmoji.isNotBlank()) state.avatarEmoji else "💼") }
 
     val flags = listOf(
         Pair("🇫🇷", "France"),
@@ -149,14 +131,14 @@ fun AccountSetupDialog(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "COMPTE DIRIGEANT",
+                                text = "COMPTE & CLOUD",
                                 color = Color.White,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Black,
                                 letterSpacing = 0.5.sp
                             )
                             Text(
-                                text = "Sans mot de passe ni OAuth • Joueurs Réels",
+                                text = "Firebase Auth • Firestore Synchronisé",
                                 color = Color(0xFF94A3B8),
                                 fontSize = 11.sp
                             )
@@ -179,7 +161,66 @@ fun AccountSetupDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Firebase Auth Status & Google Sign-In Card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                    border = BorderStroke(1.dp, if (state.isUserAuthenticated && !state.isUserAnonymous) Color(0xFF4ADE80) else Color(0xFF38BDF8))
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = if (state.isUserAuthenticated && !state.isUserAnonymous) Icons.Default.Verified else Icons.Default.CloudDone,
+                                    contentDescription = null,
+                                    tint = if (state.isUserAuthenticated && !state.isUserAnonymous) Color(0xFF4ADE80) else Color(0xFF38BDF8),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = if (state.isUserAuthenticated && !state.isUserAnonymous) "Google Auth Connecté" else "Session Firebase Firestore Active",
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = state.authUserEmail ?: (if (state.authUserId.isNotBlank()) "ID: ${state.authUserId.take(12)}..." else "Cloud Sync Prêt"),
+                                        color = Color(0xFF94A3B8),
+                                        fontSize = 10.sp
+                                    )
+                                }
+                            }
+
+                            if (!state.isUserAuthenticated || state.isUserAnonymous) {
+                                Button(
+                                    onClick = onSignInGoogle,
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.height(32.dp)
+                                ) {
+                                    Text("Google Sign-In", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                }
+                            } else {
+                                TextButton(
+                                    onClick = onSignOut,
+                                    modifier = Modifier.height(32.dp)
+                                ) {
+                                    Text("Déconnexion", color = Color(0xFFEF4444), fontSize = 10.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Champ Nom du Dirigeant
                 Text(
@@ -397,7 +438,7 @@ fun AccountSetupDialog(
 
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
-                                text = MoneyFormatter.format(currentNetWorth),
+                                text = MoneyFormatter.format(state.cash),
                                 color = Color(0xFF4ADE80),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Black

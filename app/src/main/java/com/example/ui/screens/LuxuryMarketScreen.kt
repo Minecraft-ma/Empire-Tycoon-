@@ -309,6 +309,19 @@ fun LuxuryAssetCard(
                 }
             }
 
+            if (asset.isPurchased) {
+                val upkeepPerSec = asset.cost * 0.00003
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Charges de copropriété & Entretien :", fontSize = 10.sp, color = TextMuted)
+                    Text("-${MoneyFormatter.formatPerSec(upkeepPerSec)}", fontSize = 10.sp, color = com.example.ui.theme.CrimsonFrenzy, fontWeight = FontWeight.Bold)
+                }
+            }
+
             // Purchase / Owned Action Button
             Spacer(modifier = Modifier.height(12.dp))
             if (asset.isPurchased) {

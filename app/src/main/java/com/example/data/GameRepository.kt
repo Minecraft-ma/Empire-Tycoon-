@@ -88,6 +88,66 @@ object GameRepository {
             iconType = "fashion",
             cycleTimeSeconds = 3.0f
         ),
+        Business(
+            id = "biz_electronics_store",
+            name = "Magasin High-Tech & Smart-Home",
+            category = "Shop",
+            categoryGroup = "MAGASINS",
+            level = 0,
+            baseCost = 120_000.0,
+            baseRevenuePerSec = 220.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 350_000.0,
+            description = "Smartphones dernier cri, domotique et gadgets d'exception.",
+            iconType = "tech",
+            cycleTimeSeconds = 3.2f
+        ),
+        Business(
+            id = "biz_jewel_store",
+            name = "Bijouterie Joaillerie & Horlogerie",
+            category = "Shop",
+            categoryGroup = "MAGASINS",
+            level = 0,
+            baseCost = 550_000.0,
+            baseRevenuePerSec = 850.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 1_500_000.0,
+            description = "Sertissage de diamants bruts et montres à complications rares.",
+            iconType = "store",
+            cycleTimeSeconds = 3.8f
+        ),
+        Business(
+            id = "biz_auto_dealership",
+            name = "Concession Hypercars & Prestige",
+            category = "Shop",
+            categoryGroup = "MAGASINS",
+            level = 0,
+            baseCost = 2_500_000.0,
+            baseRevenuePerSec = 3_200.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 7_000_000.0,
+            description = "Showroom exclusif distribuant des bolides en éditions limitées.",
+            iconType = "car",
+            cycleTimeSeconds = 4.5f
+        ),
+        Business(
+            id = "biz_luxury_mall",
+            name = "Grand Centre Commercial Galerie VIP",
+            category = "Shop",
+            categoryGroup = "MAGASINS",
+            level = 0,
+            baseCost = 12_000_000.0,
+            baseRevenuePerSec = 14_000.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 30_000_000.0,
+            description = "Complexe commercial réunissant les plus grandes enseignes mondiales.",
+            iconType = "store",
+            cycleTimeSeconds = 5.0f
+        ),
 
         // ==================== 2. TAXI & TRANSPORTS ====================
         Business(
@@ -120,6 +180,66 @@ object GameRepository {
             iconType = "car",
             cycleTimeSeconds = 2.5f
         ),
+        Business(
+            id = "biz_limo_service",
+            name = "Service Limousines & Chauffeurs VIP",
+            category = "Taxi",
+            categoryGroup = "TAXI",
+            level = 0,
+            baseCost = 45_000.0,
+            baseRevenuePerSec = 90.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 140_000.0,
+            description = "Escortes diplomatiques et transport de stars en berlines blindées.",
+            iconType = "car",
+            cycleTimeSeconds = 3.0f
+        ),
+        Business(
+            id = "biz_electric_bus",
+            name = "Réseau d'Autobus Électriques Urbains",
+            category = "Taxi",
+            categoryGroup = "TAXI",
+            level = 0,
+            baseCost = 280_000.0,
+            baseRevenuePerSec = 480.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 800_000.0,
+            description = "Lignes de transit haute fréquence zéro émission.",
+            iconType = "car",
+            cycleTimeSeconds = 3.5f
+        ),
+        Business(
+            id = "biz_luxury_yacht_charter",
+            name = "Location Yachts & Jet Skis de Luxe",
+            category = "Taxi",
+            categoryGroup = "TAXI",
+            level = 0,
+            baseCost = 1_500_000.0,
+            baseRevenuePerSec = 2_200.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 4_500_000.0,
+            description = "Transfers maritimes VIP et croisières côtières privées.",
+            iconType = "shipping",
+            cycleTimeSeconds = 4.0f
+        ),
+        Business(
+            id = "biz_air_taxi_network",
+            name = "Réseau Taxis Volants & eVTOL Urbains",
+            category = "Taxi",
+            categoryGroup = "TAXI",
+            level = 0,
+            baseCost = 8_500_000.0,
+            baseRevenuePerSec = 10_500.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 22_000_000.0,
+            description = "Aéronefs électriques à décollage vertical évitant les embouteillages.",
+            iconType = "rocket",
+            cycleTimeSeconds = 5.0f
+        ),
 
         // ==================== 3. LIVRAISON & FRET ====================
         Business(
@@ -151,6 +271,66 @@ object GameRepository {
             description = "Plateforme de tri robotisée et fret interurbain.",
             iconType = "shipping",
             cycleTimeSeconds = 3.5f
+        ),
+        Business(
+            id = "biz_truck_fleet",
+            name = "Flotte de Poids-Lourds Autonomes",
+            category = "Delivery",
+            categoryGroup = "LIVRAISON",
+            level = 0,
+            baseCost = 350_000.0,
+            baseRevenuePerSec = 620.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 1_000_000.0,
+            description = "Camions électriques autopilotés sillonnant les autoroutes.",
+            iconType = "shipping",
+            cycleTimeSeconds = 4.0f
+        ),
+        Business(
+            id = "biz_cargo_ships",
+            name = "Compagnie Maritime Porte-Conteneurs",
+            category = "Delivery",
+            categoryGroup = "LIVRAISON",
+            level = 0,
+            baseCost = 2_800_000.0,
+            baseRevenuePerSec = 3_800.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 8_000_000.0,
+            description = "Cargos transocéaniques assurant le commerce mondial.",
+            iconType = "shipping",
+            cycleTimeSeconds = 5.0f
+        ),
+        Business(
+            id = "biz_intercontinental_logistics",
+            name = "Réseau Logistique Froid & Médical",
+            category = "Delivery",
+            categoryGroup = "LIVRAISON",
+            level = 0,
+            baseCost = 12_500_000.0,
+            baseRevenuePerSec = 15_000.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 35_000_000.0,
+            description = "Transport sous température dirigée de vaccins et produits rares.",
+            iconType = "shipping",
+            cycleTimeSeconds = 6.0f
+        ),
+        Business(
+            id = "biz_drone_delivery",
+            name = "Livraison Drones Express Toit-à-Toit",
+            category = "Delivery",
+            categoryGroup = "LIVRAISON",
+            level = 0,
+            baseCost = 45_000_000.0,
+            baseRevenuePerSec = 52_000.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 110_000_000.0,
+            description = "Essaims de drones autonomes déposant les colis directement sur les balcons.",
+            iconType = "rocket",
+            cycleTimeSeconds = 7.0f
         ),
 
         // ==================== 4. BANQUE & FINANCE ====================
@@ -214,6 +394,51 @@ object GameRepository {
             iconType = "bank",
             cycleTimeSeconds = 7.0f
         ),
+        Business(
+            id = "biz_venture_capital",
+            name = "Fonds Venture Capital & Startups",
+            category = "Banque",
+            categoryGroup = "BANQUE",
+            level = 0,
+            baseCost = 25_000_000.0,
+            baseRevenuePerSec = 22_000.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 60_000_000.0,
+            description = "Financement des licornes de demain et prises de participations majeures.",
+            iconType = "bank",
+            cycleTimeSeconds = 8.0f
+        ),
+        Business(
+            id = "biz_crypto_exchange",
+            name = "Plateforme Exchange Crypto & Tokens",
+            category = "Banque",
+            categoryGroup = "BANQUE",
+            level = 0,
+            baseCost = 75_000_000.0,
+            baseRevenuePerSec = 62_000.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 180_000_000.0,
+            description = "Plateforme d'échange mondiale gérant des milliards de volume quotidien.",
+            iconType = "crypto",
+            cycleTimeSeconds = 9.0f
+        ),
+        Business(
+            id = "biz_sovereign_fund",
+            name = "Fonds Souverain d'Investissement Global",
+            category = "Banque",
+            categoryGroup = "BANQUE",
+            level = 0,
+            baseCost = 250_000_000.0,
+            baseRevenuePerSec = 195_000.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 600_000_000.0,
+            description = "Investissements d'État dans les infrastructures stratégiques mondiales.",
+            iconType = "bank",
+            cycleTimeSeconds = 10.0f
+        ),
 
         // ==================== 5. INDUSTRIE & USINES ====================
         Business(
@@ -275,6 +500,51 @@ object GameRepository {
             description = "Parcs solaires photovoltaïques et unités de fusion sécurisée.",
             iconType = "energy",
             cycleTimeSeconds = 9.0f
+        ),
+        Business(
+            id = "biz_shipyard",
+            name = "Chantier Naval & Navires de Haute Mer",
+            category = "Industrie",
+            categoryGroup = "INDUSTRIE",
+            level = 0,
+            baseCost = 35_000_000.0,
+            baseRevenuePerSec = 28_000.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 90_000_000.0,
+            description = "Construction de paquebots, superyachts et méthaniers.",
+            iconType = "industry",
+            cycleTimeSeconds = 10.0f
+        ),
+        Business(
+            id = "biz_robotics_plant",
+            name = "Usine Humanoïdes & Cobots Industriels",
+            category = "Industrie",
+            categoryGroup = "INDUSTRIE",
+            level = 0,
+            baseCost = 120_000_000.0,
+            baseRevenuePerSec = 92_000.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 300_000_000.0,
+            description = "Fabrication de robots humanoïdes polyvalents pour les usines du futur.",
+            iconType = "factory",
+            cycleTimeSeconds = 11.0f
+        ),
+        Business(
+            id = "biz_space_foundry",
+            name = "Fonderie d'Alliages Métalliques Rares",
+            category = "Industrie",
+            categoryGroup = "INDUSTRIE",
+            level = 0,
+            baseCost = 380_000_000.0,
+            baseRevenuePerSec = 280_000.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 900_000_000.0,
+            description = "Raffinage de titane pur, carbone et alliages pour l'aérospatiale.",
+            iconType = "industry",
+            cycleTimeSeconds = 12.0f
         ),
 
         // ==================== 6. TECH & IA ====================
@@ -338,6 +608,51 @@ object GameRepository {
             iconType = "quantum",
             cycleTimeSeconds = 10.0f
         ),
+        Business(
+            id = "biz_social_network",
+            name = "Réseau Social Mondial & Métavers",
+            category = "Tech",
+            categoryGroup = "TECH",
+            level = 0,
+            baseCost = 45_000_000.0,
+            baseRevenuePerSec = 38_000.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 110_000_000.0,
+            description = "Plateforme connectant 2 milliards d'utilisateurs quotidiens.",
+            iconType = "tech",
+            cycleTimeSeconds = 11.0f
+        ),
+        Business(
+            id = "biz_satellite_internet",
+            name = "Constellation Satellites Internet",
+            category = "Tech",
+            categoryGroup = "TECH",
+            level = 0,
+            baseCost = 180_000_000.0,
+            baseRevenuePerSec = 135_000.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 450_000_000.0,
+            description = "Réseau mondial de télécommunication à haut débit et faible latence.",
+            iconType = "rocket",
+            cycleTimeSeconds = 12.0f
+        ),
+        Business(
+            id = "biz_agi_research",
+            name = "Laboratoire AGI & Cerveau Quantique",
+            category = "Tech",
+            categoryGroup = "TECH",
+            level = 0,
+            baseCost = 500_000_000.0,
+            baseRevenuePerSec = 390_000.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 1_200_000_000.0,
+            description = "Recherche fondamentale sur l'intelligence artificielle générale consciente.",
+            iconType = "quantum",
+            cycleTimeSeconds = 13.0f
+        ),
 
         // ==================== 7. SPATIAL & AÉROSPATIAL ====================
         Business(
@@ -369,6 +684,66 @@ object GameRepository {
             description = "Base de lancement autonome, satellites et missions spatiales orbitales.",
             iconType = "rocket",
             cycleTimeSeconds = 12.0f
+        ),
+        Business(
+            id = "biz_orbital_station",
+            name = "Station Orbitale Hôtelière Zéro-G",
+            category = "Spatial",
+            categoryGroup = "SPATIAL",
+            level = 0,
+            baseCost = 250_000_000.0,
+            baseRevenuePerSec = 185_000.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 600_000_000.0,
+            description = "Hôtel d'exception en orbite terrestre basse pour millionnaires.",
+            iconType = "rocket",
+            cycleTimeSeconds = 13.0f
+        ),
+        Business(
+            id = "biz_lunar_mine",
+            name = "Mine d'Hélium-3 sur la Lune",
+            category = "Spatial",
+            categoryGroup = "SPATIAL",
+            level = 0,
+            baseCost = 850_000_000.0,
+            baseRevenuePerSec = 620_000.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 2_000_000_000.0,
+            description = "Extraction de carburant de fusion nucléaire sur le sol lunaire.",
+            iconType = "quantum",
+            cycleTimeSeconds = 14.0f
+        ),
+        Business(
+            id = "biz_asteroid_mining",
+            name = "Exploitation d'Astéroïdes Métalliques",
+            category = "Spatial",
+            categoryGroup = "SPATIAL",
+            level = 0,
+            baseCost = 2_500_000_000.0,
+            baseRevenuePerSec = 1_850_000.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 6_000_000_000.0,
+            description = "Capture d'astéroïdes riches en platine et or pur dans la ceinture de Kuiper.",
+            iconType = "rocket",
+            cycleTimeSeconds = 15.0f
+        ),
+        Business(
+            id = "biz_mars_colony_hub",
+            name = "Hub de Colonisation de la Planète Mars",
+            category = "Spatial",
+            categoryGroup = "SPATIAL",
+            level = 0,
+            baseCost = 10_000_000_000.0,
+            baseRevenuePerSec = 7_500_000.0,
+            isUnlocked = false,
+            managerHired = false,
+            managerCost = 25_000_000_000.0,
+            description = "Première cité martienne autonome sous dômes de verre géants.",
+            iconType = "rocket",
+            cycleTimeSeconds = 16.0f
         )
     )
 
@@ -380,7 +755,8 @@ object GameRepository {
             price = 145.0,
             previousPrice = 140.0,
             history = listOf(130f, 135f, 142f, 138f, 145f),
-            volatility = 0.08f
+            volatility = 0.08f,
+            isCrypto = false
         ),
         StockItem(
             ticker = "LUX-GL",
@@ -389,7 +765,8 @@ object GameRepository {
             price = 320.0,
             previousPrice = 325.0,
             history = listOf(310f, 318f, 325f, 322f, 320f),
-            volatility = 0.04f
+            volatility = 0.04f,
+            isCrypto = false
         ),
         StockItem(
             ticker = "NOVA-COIN",
@@ -398,7 +775,8 @@ object GameRepository {
             price = 42.5,
             previousPrice = 38.0,
             history = listOf(28f, 35f, 44f, 36f, 42.5f),
-            volatility = 0.16f
+            volatility = 0.22f,
+            isCrypto = true
         ),
         StockItem(
             ticker = "ASTRA-SP",
@@ -407,7 +785,8 @@ object GameRepository {
             price = 580.0,
             previousPrice = 570.0,
             history = listOf(540f, 555f, 560f, 570f, 580f),
-            volatility = 0.05f
+            volatility = 0.05f,
+            isCrypto = false
         ),
         StockItem(
             ticker = "GREEN-NRG",
@@ -416,7 +795,8 @@ object GameRepository {
             price = 85.0,
             previousPrice = 86.0,
             history = listOf(78f, 82f, 89f, 86f, 85f),
-            volatility = 0.07f
+            volatility = 0.07f,
+            isCrypto = false
         ),
         StockItem(
             ticker = "BTC-TYC",
@@ -425,7 +805,8 @@ object GameRepository {
             price = 62000.0,
             previousPrice = 61500.0,
             history = listOf(58000f, 59500f, 63000f, 60500f, 62000f),
-            volatility = 0.22f
+            volatility = 0.25f,
+            isCrypto = true
         ),
         StockItem(
             ticker = "ETH-TYC",
@@ -434,7 +815,8 @@ object GameRepository {
             price = 3400.0,
             previousPrice = 3450.0,
             history = listOf(3100f, 3250f, 3500f, 3350f, 3400f),
-            volatility = 0.28f
+            volatility = 0.30f,
+            isCrypto = true
         ),
         StockItem(
             ticker = "DOGE-MEME",
@@ -443,7 +825,8 @@ object GameRepository {
             price = 0.12,
             previousPrice = 0.11,
             history = listOf(0.08f, 0.15f, 0.21f, 0.09f, 0.12f),
-            volatility = 0.48f
+            volatility = 0.48f,
+            isCrypto = true
         ),
         StockItem(
             ticker = "SOL-ELEC",
@@ -452,7 +835,8 @@ object GameRepository {
             price = 145.0,
             previousPrice = 148.0,
             history = listOf(110f, 130f, 155f, 140f, 145f),
-            volatility = 0.35f
+            volatility = 0.38f,
+            isCrypto = true
         ),
         StockItem(
             ticker = "BIO-GEN",
@@ -461,7 +845,8 @@ object GameRepository {
             price = 210.0,
             previousPrice = 208.0,
             history = listOf(190f, 195f, 220f, 205f, 210f),
-            volatility = 0.12f
+            volatility = 0.12f,
+            isCrypto = false
         ),
         StockItem(
             ticker = "COAL-OUT",
@@ -470,7 +855,8 @@ object GameRepository {
             price = 45.0,
             previousPrice = 45.2,
             history = listOf(42f, 43f, 46f, 44f, 45f),
-            volatility = 0.06f
+            volatility = 0.06f,
+            isCrypto = false
         ),
         StockItem(
             ticker = "SND-BOX",
@@ -479,7 +865,8 @@ object GameRepository {
             price = 1.8,
             previousPrice = 1.9,
             history = listOf(1.2f, 1.5f, 2.1f, 1.7f, 1.8f),
-            volatility = 0.32f
+            volatility = 0.32f,
+            isCrypto = true
         ),
         StockItem(
             ticker = "FOOD-TYC",
@@ -488,7 +875,8 @@ object GameRepository {
             price = 95.0,
             previousPrice = 94.5,
             history = listOf(90f, 92f, 96f, 94f, 95f),
-            volatility = 0.03f
+            volatility = 0.03f,
+            isCrypto = false
         ),
         StockItem(
             ticker = "CRU-OIL",
@@ -497,7 +885,8 @@ object GameRepository {
             price = 75.0,
             previousPrice = 76.5,
             history = listOf(70f, 73f, 79f, 74f, 75f),
-            volatility = 0.08f
+            volatility = 0.08f,
+            isCrypto = false
         ),
         StockItem(
             ticker = "LITE-COIN",
@@ -506,7 +895,8 @@ object GameRepository {
             price = 85.0,
             previousPrice = 83.0,
             history = listOf(75f, 80f, 92f, 82f, 85f),
-            volatility = 0.18f
+            volatility = 0.22f,
+            isCrypto = true
         ),
         StockItem(
             ticker = "MEME-PEPE",
@@ -515,7 +905,8 @@ object GameRepository {
             price = 0.005,
             previousPrice = 0.004,
             history = listOf(0.002f, 0.007f, 0.012f, 0.003f, 0.005f),
-            volatility = 0.65f
+            volatility = 0.65f,
+            isCrypto = true
         )
     )
 
@@ -559,6 +950,47 @@ object GameRepository {
             perkDescription = "+300% de puissance de frappe (Action Tap) et déclenchement du Frenzy x10 accéléré.",
             clickPowerBoost = 3.00,
             emoji = "⚡"
+        ),
+        Executive(
+            id = "exec_cio",
+            name = "Alexander Vance",
+            role = "Chief Investment Officer (CIO)",
+            cost = 10_000_000.0,
+            perkTitle = "Arbitrage Souverain",
+            perkDescription = "+80% de revenus passifs permanents sur toutes les filiales de l'empire.",
+            passiveRevenueBoost = 0.80,
+            emoji = "💼"
+        ),
+        Executive(
+            id = "exec_caio",
+            name = "Dr. Evelyn Cross",
+            role = "Chief AI & Automation Scientist",
+            cost = 50_000_000.0,
+            perkTitle = "Automatisation Quantique",
+            perkDescription = "+120% de revenus passifs et optimisation suprême des flux de trésorerie.",
+            passiveRevenueBoost = 1.20,
+            emoji = "👩‍🔬"
+        ),
+        Executive(
+            id = "exec_sovereign_advisor",
+            name = "Baron Henri de Rothschild",
+            role = "Conseiller Souverain Privé",
+            cost = 250_000_000.0,
+            perkTitle = "Accès aux Fonds Souverains",
+            perkDescription = "+200% de revenus passifs globaux sur l'ensemble de l'empire métropolitain.",
+            passiveRevenueBoost = 2.00,
+            emoji = "🎩"
+        ),
+        Executive(
+            id = "exec_stellar_ambassador",
+            name = "Lady Seraphina Thorne",
+            role = "Ambassadrice des Marchés Stellaires",
+            cost = 1_500_000_000.0,
+            perkTitle = "Monopole Galactique",
+            perkDescription = "+300% de revenus passifs et multiplication par 3 de la force de frappe du tap !",
+            passiveRevenueBoost = 3.00,
+            clickPowerBoost = 3.00,
+            emoji = "👑"
         )
     )
 
@@ -843,8 +1275,8 @@ object GameRepository {
             description = "Signe 10 contrats en tapant sur le bouton d'action.",
             iconEmoji = "🤝",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 250.0,
-            rewardLabel = "+$250",
+            rewardValue = 25.0,
+            rewardLabel = "+$25",
             targetValue = 10L
         ),
         com.example.model.Achievement(
@@ -853,8 +1285,8 @@ object GameRepository {
             description = "Atteins un total de 100 taps sur le deal core.",
             iconEmoji = "⚡",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 2_500.0,
-            rewardLabel = "+$2.5K",
+            rewardValue = 100.0,
+            rewardLabel = "+$100",
             targetValue = 100L
         ),
         com.example.model.Achievement(
@@ -863,8 +1295,8 @@ object GameRepository {
             description = "Atteins un enchaînement combo de 20x en tapant vite.",
             iconEmoji = "🔥",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 5_000.0,
-            rewardLabel = "+$5K",
+            rewardValue = 150.0,
+            rewardLabel = "+$150",
             targetValue = 20L
         ),
         com.example.model.Achievement(
@@ -873,8 +1305,8 @@ object GameRepository {
             description = "Cumule au total 10 000 $ de cash généré.",
             iconEmoji = "💵",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 3_000.0,
-            rewardLabel = "+$3K",
+            rewardValue = 1_000.0,
+            rewardLabel = "+$1K",
             targetValue = 10_000L
         ),
         com.example.model.Achievement(
@@ -883,8 +1315,8 @@ object GameRepository {
             description = "Génère un total cumulé de 1 000 000 $.",
             iconEmoji = "💰",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 150_000.0,
-            rewardLabel = "+$150K",
+            rewardValue = 50_000.0,
+            rewardLabel = "+$50K",
             targetValue = 1_000_000L
         ),
         com.example.model.Achievement(
@@ -893,8 +1325,8 @@ object GameRepository {
             description = "Atteins le statut de milliardaire (1 Milliard $ cumulé).",
             iconEmoji = "🏆",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 100_000_000.0,
-            rewardLabel = "+$100M",
+            rewardValue = 10_000_000.0,
+            rewardLabel = "+$10M",
             targetValue = 1_000_000_000L
         ),
         com.example.model.Achievement(
@@ -903,8 +1335,8 @@ object GameRepository {
             description = "Réalise 10 transactions d'achat ou vente d'actions.",
             iconEmoji = "📊",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 10_000.0,
-            rewardLabel = "+$10K",
+            rewardValue = 300.0,
+            rewardLabel = "+$300",
             targetValue = 10L
         ),
         com.example.model.Achievement(
@@ -913,8 +1345,8 @@ object GameRepository {
             description = "Déploie au moins 2 régies publicitaires.",
             iconEmoji = "📺",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 25_000.0,
-            rewardLabel = "+$25K",
+            rewardValue = 1_500.0,
+            rewardLabel = "+$1.5K",
             targetValue = 2L
         ),
         com.example.model.Achievement(
@@ -923,8 +1355,8 @@ object GameRepository {
             description = "Remporte 5 mini-jeux sponsorisés avec succès.",
             iconEmoji = "⭐",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 50_000.0,
-            rewardLabel = "+$50K",
+            rewardValue = 2_000.0,
+            rewardLabel = "+$2K",
             targetValue = 5L
         ),
         com.example.model.Achievement(
@@ -933,8 +1365,8 @@ object GameRepository {
             description = "Prends 3 décisions stratégiques victorieuses lors de crises.",
             iconEmoji = "🛡️",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 40_000.0,
-            rewardLabel = "+$40K",
+            rewardValue = 2_500.0,
+            rewardLabel = "+$2.5K",
             targetValue = 3L
         ),
         com.example.model.Achievement(
@@ -943,8 +1375,8 @@ object GameRepository {
             description = "Réalise ton premier Prestige pour vendre ton empire financier.",
             iconEmoji = "🎖️",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 250_000.0,
-            rewardLabel = "+$250K",
+            rewardValue = 25_000.0,
+            rewardLabel = "+$25K",
             targetValue = 1L
         ),
         com.example.model.Achievement(
@@ -953,8 +1385,8 @@ object GameRepository {
             description = "Cumule un total colossal de 1 Trillion $ sur la durée de vie de l'empire.",
             iconEmoji = "🌌",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 500_000_000_000.0,
-            rewardLabel = "+$500B",
+            rewardValue = 1_000_000_000.0,
+            rewardLabel = "+$1B",
             targetValue = 1_000_000_000_000L
         ),
         com.example.model.Achievement(
@@ -963,8 +1395,8 @@ object GameRepository {
             description = "Atteins le niveau 5 de Prestige.",
             iconEmoji = "👑",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 2_000_000_000.0,
-            rewardLabel = "+$2B",
+            rewardValue = 500_000.0,
+            rewardLabel = "+$500K",
             targetValue = 5L
         ),
         com.example.model.Achievement(
@@ -973,8 +1405,8 @@ object GameRepository {
             description = "Réalise un total de 50 transactions d'achat ou de vente d'actions.",
             iconEmoji = "📈",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 10_000_000.0,
-            rewardLabel = "+$10M",
+            rewardValue = 10_000.0,
+            rewardLabel = "+$10K",
             targetValue = 50L
         ),
         com.example.model.Achievement(
@@ -983,8 +1415,8 @@ object GameRepository {
             description = "Atteins 1000 signatures de contrats par tap.",
             iconEmoji = "⚡",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 50_000_000.0,
-            rewardLabel = "+$50M",
+            rewardValue = 5_000.0,
+            rewardLabel = "+$5K",
             targetValue = 1000L
         ),
         com.example.model.Achievement(
@@ -993,8 +1425,8 @@ object GameRepository {
             description = "Signe un total de 5 000 contrats par tap.",
             iconEmoji = "🖱️",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 500_000_000.0,
-            rewardLabel = "+$500M",
+            rewardValue = 25_000.0,
+            rewardLabel = "+$25K",
             targetValue = 5000L
         ),
         com.example.model.Achievement(
@@ -1003,8 +1435,8 @@ object GameRepository {
             description = "Atteins un combo multiplicateur exceptionnel de 50x.",
             iconEmoji = "☄️",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 1_000_000.0,
-            rewardLabel = "+$1M",
+            rewardValue = 500.0,
+            rewardLabel = "+$500",
             targetValue = 50L
         ),
         com.example.model.Achievement(
@@ -1013,8 +1445,8 @@ object GameRepository {
             description = "Atteins un combo légendaire de 100x !",
             iconEmoji = "✨",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 100_000_000.0,
-            rewardLabel = "+$100M",
+            rewardValue = 5_000.0,
+            rewardLabel = "+$5K",
             targetValue = 100L
         ),
         com.example.model.Achievement(
@@ -1023,8 +1455,8 @@ object GameRepository {
             description = "Atteins le Prestige niveau 10.",
             iconEmoji = "🔥",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 100_000_000_000.0,
-            rewardLabel = "+$100B",
+            rewardValue = 5_000_000.0,
+            rewardLabel = "+$5M",
             targetValue = 10L
         ),
         com.example.model.Achievement(
@@ -1033,8 +1465,8 @@ object GameRepository {
             description = "Effectue 100 transactions d'actions.",
             iconEmoji = "💹",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 250_000_000.0,
-            rewardLabel = "+$250M",
+            rewardValue = 25_000.0,
+            rewardLabel = "+$25K",
             targetValue = 100L
         ),
         com.example.model.Achievement(
@@ -1043,8 +1475,8 @@ object GameRepository {
             description = "Remporte 20 mini-jeux de sponsors.",
             iconEmoji = "📢",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 50_000_000.0,
-            rewardLabel = "+$50M",
+            rewardValue = 25_000.0,
+            rewardLabel = "+$25K",
             targetValue = 20L
         ),
         com.example.model.Achievement(
@@ -1053,8 +1485,8 @@ object GameRepository {
             description = "Résous 10 crises d'entreprise avec succès.",
             iconEmoji = "🌍",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 25_000_000.0,
-            rewardLabel = "+$25M",
+            rewardValue = 30_000.0,
+            rewardLabel = "+$30K",
             targetValue = 10L
         ),
         com.example.model.Achievement(
@@ -1063,8 +1495,8 @@ object GameRepository {
             description = "Embauche ton tout premier manager d'entreprise.",
             iconEmoji = "👔",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 5_000.0,
-            rewardLabel = "+$5K",
+            rewardValue = 100.0,
+            rewardLabel = "+$100",
             targetValue = 1L
         ),
         com.example.model.Achievement(
@@ -1073,8 +1505,8 @@ object GameRepository {
             description = "Embauche 6 managers d'entreprise simultanément.",
             iconEmoji = "🧑‍🤝‍🧑",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 5_000_000.0,
-            rewardLabel = "+$5M",
+            rewardValue = 20_000.0,
+            rewardLabel = "+$20K",
             targetValue = 6L
         ),
         com.example.model.Achievement(
@@ -1083,8 +1515,8 @@ object GameRepository {
             description = "Embauche les 12 managers pour automatiser toutes tes entreprises.",
             iconEmoji = "🌐",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 500_000_000.0,
-            rewardLabel = "+$500M",
+            rewardValue = 100_000.0,
+            rewardLabel = "+$100K",
             targetValue = 12L
         ),
         com.example.model.Achievement(
@@ -1093,8 +1525,8 @@ object GameRepository {
             description = "Embauche ton premier cadre dirigeant pour bénéficier de bonus passifs.",
             iconEmoji = "👩‍💼",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 10_000_000.0,
-            rewardLabel = "+$10M",
+            rewardValue = 2_000.0,
+            rewardLabel = "+$2K",
             targetValue = 1L
         ),
         com.example.model.Achievement(
@@ -1103,8 +1535,8 @@ object GameRepository {
             description = "Embauche au moins 3 cadres dirigeants dans ton profil.",
             iconEmoji = "🏛️",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 500_000_000.0,
-            rewardLabel = "+$500M",
+            rewardValue = 50_000.0,
+            rewardLabel = "+$50K",
             targetValue = 3L
         ),
         com.example.model.Achievement(
@@ -1113,8 +1545,8 @@ object GameRepository {
             description = "Améliore le Coffee Startup Express au niveau 100.",
             iconEmoji = "☕",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 1_000_000.0,
-            rewardLabel = "+$1M",
+            rewardValue = 5_000.0,
+            rewardLabel = "+$5K",
             targetValue = 100L
         ),
         com.example.model.Achievement(
@@ -1123,8 +1555,8 @@ object GameRepository {
             description = "Améliore Nexus AI Studio au niveau 50.",
             iconEmoji = "💻",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 10_000_000.0,
-            rewardLabel = "+$10M",
+            rewardValue = 100_000.0,
+            rewardLabel = "+$100K",
             targetValue = 50L
         ),
         com.example.model.Achievement(
@@ -1133,8 +1565,8 @@ object GameRepository {
             description = "Améliore le Supercalculateur Singularity au niveau 10.",
             iconEmoji = "🖲️",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 10_000_000_000.0,
-            rewardLabel = "+$10B",
+            rewardValue = 5_000_000.0,
+            rewardLabel = "+$5M",
             targetValue = 10L
         ),
         com.example.model.Achievement(
@@ -1143,8 +1575,8 @@ object GameRepository {
             description = "Déverrouille 5 améliorations technologiques dans la boutique.",
             iconEmoji = "🧬",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 50_000_000.0,
-            rewardLabel = "+$50M",
+            rewardValue = 50_000.0,
+            rewardLabel = "+$50K",
             targetValue = 5L
         ),
         com.example.model.Achievement(
@@ -1153,8 +1585,8 @@ object GameRepository {
             description = "Déverrouille toutes les améliorations technologiques.",
             iconEmoji = "🦾",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 5_000_000_000.0,
-            rewardLabel = "+$5B",
+            rewardValue = 2_000_000.0,
+            rewardLabel = "+$2M",
             targetValue = 9L
         ),
         com.example.model.Achievement(
@@ -1163,8 +1595,8 @@ object GameRepository {
             description = "Construis la première étape d'un mégaprojet.",
             iconEmoji = "🏗️",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 250_000_000.0,
-            rewardLabel = "+$250M",
+            rewardValue = 500_000.0,
+            rewardLabel = "+$500K",
             targetValue = 1L
         ),
         com.example.model.Achievement(
@@ -1173,8 +1605,8 @@ object GameRepository {
             description = "Termine entièrement (Étape 5) n'importe quel mégaprojet.",
             iconEmoji = "🏟️",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 10_000_000_000.0,
-            rewardLabel = "+$10B",
+            rewardValue = 10_000_000.0,
+            rewardLabel = "+$10M",
             targetValue = 5L
         ),
         com.example.model.Achievement(
@@ -1183,8 +1615,8 @@ object GameRepository {
             description = "Déverrouille toutes les régies publicitaires.",
             iconEmoji = "📣",
             rewardType = com.example.model.AchievementRewardType.CASH,
-            rewardValue = 100_000_000.0,
-            rewardLabel = "+$100M",
+            rewardValue = 50_000.0,
+            rewardLabel = "+$50K",
             targetValue = 5L
         )
     )
@@ -1223,13 +1655,13 @@ object GameRepository {
     ).random()
 
     fun getDefaultDailyRewards(): List<com.example.model.DailyLoginReward> = listOf(
-        com.example.model.DailyLoginReward(1, "Prime de Bienvenue", "+$5,000", "🎁", 5_000.0, isCurrentDay = true),
-        com.example.model.DailyLoginReward(2, "Investisseur en Herbe", "+$25,000", "💼", 25_000.0, 2.0, 60),
-        com.example.model.DailyLoginReward(3, "Bourse en Folie", "+$100,000", "📈", 100_000.0),
-        com.example.model.DailyLoginReward(4, "Frenzy Éclair", "+$500,000 + Boost x5", "🔥", 500_000.0, 5.0, 45),
-        com.example.model.DailyLoginReward(5, "Coffre R&D", "+$2.5M Cash", "🔬", 2_500_000.0),
-        com.example.model.DailyLoginReward(6, "Valise Diamant VIP", "+$10M Cash", "💎", 10_000_000.0),
-        com.example.model.DailyLoginReward(7, "Couronne du Tycoon", "+$50M + Couronne Or", "👑", 50_000_000.0, 10.0, 120)
+        com.example.model.DailyLoginReward(1, "Prime de Bienvenue", "+$50", "🎁", 50.0, isCurrentDay = true),
+        com.example.model.DailyLoginReward(2, "Investisseur en Herbe", "+$250", "💼", 250.0, 1.5, 45),
+        com.example.model.DailyLoginReward(3, "Bourse en Folie", "+$1,000", "📈", 1_000.0),
+        com.example.model.DailyLoginReward(4, "Frenzy Éclair", "+$3,000 + Boost x2", "🔥", 3_000.0, 2.0, 30),
+        com.example.model.DailyLoginReward(5, "Coffre R&D", "+$10,000 Cash", "🔬", 10_000.0),
+        com.example.model.DailyLoginReward(6, "Valise Diamant VIP", "+$50,000 Cash", "💎", 50_000.0),
+        com.example.model.DailyLoginReward(7, "Couronne du Tycoon", "+$250,000 + Couronne Or", "👑", 250_000.0, 2.5, 60)
     )
 
     fun getDailyRewardsForStreak(streakDays: Int, claimedDays: Set<Int> = emptySet()): List<com.example.model.DailyLoginReward> {
@@ -1243,65 +1675,65 @@ object GameRepository {
     }
 
     fun getDefaultMilestoneChests(prestigeLevel: Int = 0): List<DailyMilestoneChest> {
-        val multiplier = 1.0 + (prestigeLevel * 0.5)
+        val multiplier = 1.0 + (prestigeLevel * 0.25)
         return listOf(
             DailyMilestoneChest(
                 milestoneTarget = 2,
                 title = "Coffre Bronze de Débutant",
                 iconEmoji = "🥉",
-                rewardCash = 50_000.0 * multiplier,
-                rewardBoostMultiplier = 1.5,
-                rewardBoostDurationSec = 60,
-                rewardLabel = "+${MoneyFormatter.format(50_000.0 * multiplier)} + Boost x1.5"
+                rewardCash = 150.0 * multiplier,
+                rewardBoostMultiplier = 1.2,
+                rewardBoostDurationSec = 30,
+                rewardLabel = "+${MoneyFormatter.format(150.0 * multiplier)} + Boost x1.2"
             ),
             DailyMilestoneChest(
                 milestoneTarget = 4,
                 title = "Coffre Argent de l'Investisseur",
                 iconEmoji = "🥈",
-                rewardCash = 250_000.0 * multiplier,
-                rewardBoostMultiplier = 2.0,
-                rewardBoostDurationSec = 90,
-                rewardLabel = "+${MoneyFormatter.format(250_000.0 * multiplier)} + Boost x2.0"
+                rewardCash = 1_500.0 * multiplier,
+                rewardBoostMultiplier = 1.5,
+                rewardBoostDurationSec = 45,
+                rewardLabel = "+${MoneyFormatter.format(1_500.0 * multiplier)} + Boost x1.5"
             ),
             DailyMilestoneChest(
                 milestoneTarget = 6,
                 title = "Coffre Or du Grand Magnat",
                 iconEmoji = "👑",
-                rewardCash = 1_500_000.0 * multiplier,
-                rewardBoostMultiplier = 3.0,
-                rewardBoostDurationSec = 120,
-                rewardLabel = "+${MoneyFormatter.format(1_500_000.0 * multiplier)} + Boost x3.0"
+                rewardCash = 15_000.0 * multiplier,
+                rewardBoostMultiplier = 2.0,
+                rewardBoostDurationSec = 60,
+                rewardLabel = "+${MoneyFormatter.format(15_000.0 * multiplier)} + Boost x2.0"
             )
         )
     }
 
     fun generateDailyMissions(netWorth: Double = 1000.0, prestigeLevel: Int = 0): List<DailyMission> {
-        val mult = max(1.0, 1.0 + (prestigeLevel * 0.75))
-        val baseScale = max(1.0, netWorth / 5000.0).coerceAtMost(100_000.0)
+        val mult = max(1.0, 1.0 + (prestigeLevel * 0.25))
+        val baseScale = max(0.01, netWorth / 100_000.0).coerceAtMost(10.0)
 
-        val tapTarget = (50L..100L).random()
-        val tapReward = max(10_000.0, 5_000.0 * baseScale * mult)
+        val tapTarget = (30L..60L).random()
+        val tapReward = max(30.0, 150.0 * baseScale * mult)
 
-        val cashTarget = (max(5_000.0, netWorth * 0.3)).toLong()
-        val cashReward = max(25_000.0, cashTarget * 0.5 * mult)
+        val cashTarget = (max(50.0, netWorth * 0.1)).toLong()
+        val cashReward = max(40.0, cashTarget * 0.15 * mult)
 
-        val upgradeTarget = (3L..8L).random()
-        val upgradeReward = max(20_000.0, 10_000.0 * baseScale * mult)
+        val upgradeTarget = (2L..5L).random()
+        val upgradeReward = max(50.0, 200.0 * baseScale * mult)
 
-        val stockTarget = (2L..5L).random()
-        val stockReward = max(35_000.0, 15_000.0 * baseScale * mult)
+        val stockTarget = (2L..4L).random()
+        val stockReward = max(50.0, 250.0 * baseScale * mult)
 
-        val sponsorTarget = (1L..3L).random()
-        val sponsorReward = max(50_000.0, 20_000.0 * baseScale * mult)
+        val sponsorTarget = (1L..2L).random()
+        val sponsorReward = max(80.0, 300.0 * baseScale * mult)
 
-        val challengeTarget = (1L..2L).random()
-        val challengeReward = max(60_000.0, 30_000.0 * baseScale * mult)
+        val challengeTarget = 1L
+        val challengeReward = max(100.0, 400.0 * baseScale * mult)
 
-        val comboTarget = (15L..25L).random()
-        val comboReward = max(35_000.0, 15_000.0 * baseScale * mult)
+        val comboTarget = (10L..20L).random()
+        val comboReward = max(50.0, 200.0 * baseScale * mult)
 
         val crisisTarget = 1L
-        val crisisReward = max(50_000.0, 22_000.0 * baseScale * mult)
+        val crisisReward = max(100.0, 500.0 * baseScale * mult)
 
         return listOf(
             DailyMission(
@@ -1573,6 +2005,61 @@ object GameRepository {
             baseCost = 50_000_000.0,
             passiveMultiplierBonus = 0.75,
             iconEmoji = "🌐"
+        ),
+        com.example.model.Megaproject(
+            id = "mega_hadron",
+            name = "Accélérateur Hadronique à Matière Noire",
+            category = "Infrastructures Scientifiques",
+            description = "Synthétise des particules exotiques pour alimenter l'industrie supraconductrice mondiale. Octroie +100% de revenus passifs par niveau.",
+            stage = 0,
+            maxStage = 5,
+            baseCost = 250_000_000.0,
+            passiveMultiplierBonus = 1.00,
+            iconEmoji = "⚛️"
+        ),
+        com.example.model.Megaproject(
+            id = "mega_ocean_citadel",
+            name = "Cité Flottante Océanique Atlantide II",
+            category = "Urbanisme & Souveraineté",
+            description = "Mégalopole maritime autonome de 500 000 habitants sous pavillon diplomatique privé. Octroie +125% de revenus passifs par niveau.",
+            stage = 0,
+            maxStage = 5,
+            baseCost = 750_000_000.0,
+            passiveMultiplierBonus = 1.25,
+            iconEmoji = "🌊"
+        ),
+        com.example.model.Megaproject(
+            id = "mega_lunar_elevator",
+            name = "Ascenseur Spatial Terrestre-Orbital",
+            category = "Infrastructures Spatiales",
+            description = "Câble en nanotubes de carbone de 36 000 km reliant l'équateur à l'orbite géostationnaire. Octroie +175% de revenus passifs par niveau.",
+            stage = 0,
+            maxStage = 5,
+            baseCost = 2_500_000_000.0,
+            passiveMultiplierBonus = 1.75,
+            iconEmoji = "🚠"
+        ),
+        com.example.model.Megaproject(
+            id = "mega_mars_colony",
+            name = "Mégapole Martienne Olympus Dome",
+            category = "Colonisation Planétaire",
+            description = "Capitale martienne autonome sous dômes géodésiques de nanoverre pressurisés. Octroie +250% de revenus passifs par niveau.",
+            stage = 0,
+            maxStage = 5,
+            baseCost = 10_000_000_000.0,
+            passiveMultiplierBonus = 2.50,
+            iconEmoji = "🔴"
+        ),
+        com.example.model.Megaproject(
+            id = "mega_dyson_swarm",
+            name = "Essaim de Dyson Solaire Trans-Stellaire",
+            category = "Mégastructure Stellaire",
+            description = "Flotte orbitale de collecteurs solaires à miroirs géants captant l'énergie brute d'une étoile entière. Octroie +400% de revenus passifs par niveau.",
+            stage = 0,
+            maxStage = 5,
+            baseCost = 50_000_000_000.0,
+            passiveMultiplierBonus = 4.00,
+            iconEmoji = "☀️"
         )
     )
 
@@ -1804,6 +2291,58 @@ object GameRepository {
             iconEmoji = "🏦",
             badgeText = "+20% Intérêts",
             tagHexColor = 0xFF7C3AED
+        ),
+        com.example.model.ProductivityUpgrade(
+            id = "upg_quantum_haptics",
+            name = "Puce de Frappe Quantique Neuro-Lien",
+            category = com.example.model.UpgradeCategory.CLICK_POWER,
+            description = "Connexion synaptique directe pour valider les ordres de marché par la pensée. +25% de cash par clic.",
+            baseCost = 50_000_000.0,
+            costMultiplier = 1.20,
+            level = 0,
+            multiplierPerLevel = 0.25,
+            iconEmoji = "⚡",
+            badgeText = "+25% Clic",
+            tagHexColor = 0xFFEC4899
+        ),
+        com.example.model.ProductivityUpgrade(
+            id = "upg_dark_matter_datacenter",
+            name = "Centres de Données à Matière Noire",
+            category = com.example.model.UpgradeCategory.PASSIVE_BUSINESS,
+            description = "Calculs d'optimisation d'empire sans latence. +30% de revenus passifs par niveau.",
+            baseCost = 150_000_000.0,
+            costMultiplier = 1.22,
+            level = 0,
+            multiplierPerLevel = 0.30,
+            iconEmoji = "🌌",
+            badgeText = "+30% Passif",
+            tagHexColor = 0xFF8B5CF6
+        ),
+        com.example.model.ProductivityUpgrade(
+            id = "upg_sovereign_lobbying",
+            name = "Conseil de Concertation Souveraine",
+            category = com.example.model.UpgradeCategory.FINANCE_AND_MARKET,
+            description = "Accords bilatéraux privilégiés supprimant les frictions de marché. +40% de profits boursiers et dividendes.",
+            baseCost = 500_000_000.0,
+            costMultiplier = 1.25,
+            level = 0,
+            multiplierPerLevel = 0.40,
+            iconEmoji = "🏛️",
+            badgeText = "+40% Finance",
+            tagHexColor = 0xFF10B981
+        ),
+        com.example.model.ProductivityUpgrade(
+            id = "upg_universal_singularity",
+            name = "Pilote Central d'Empire IA Omniscient",
+            category = com.example.model.UpgradeCategory.PASSIVE_BUSINESS,
+            description = "Orchestre l'ensemble des holdings, usines, spatioports et marchés à l'absolue perfection. +100% de gains totaux !",
+            baseCost = 2_500_000_000.0,
+            costMultiplier = 1.30,
+            level = 0,
+            multiplierPerLevel = 1.00,
+            iconEmoji = "👑",
+            badgeText = "+100% Total",
+            tagHexColor = 0xFFF59E0B
         )
     )
 
@@ -1879,6 +2418,60 @@ object GameRepository {
                 RivalBidder("riv_1", "Lord Sterling", "Baron du Pétrole", "🎩", 500_000_000.0),
                 RivalBidder("riv_4", "Sofia Al-Mansoor", "Héritière Immobilière", "👑", 800_000_000.0)
             )
+        ),
+        AuctionLot(
+            id = "auc_mars_territory",
+            title = "Titre Foncier Souverain du Bassin d'Hellas (Mars)",
+            category = "Territoire Planétaire",
+            description = "Droits de propriété perpétuelle sur le plus grand bassin d'impact martien (2300 km). +120% permanent et +$15M/s !",
+            startingBid = 500_000_000.0,
+            currentBid = 500_000_000.0,
+            highestBidderName = "Syndicat Minier Martien",
+            isPlayerWinning = false,
+            timeRemainingSec = 75,
+            permanentMultiplier = 1.20,
+            bonusCashYieldPerSec = 15_000_000.0,
+            iconEmoji = "🔴",
+            activeRivals = listOf(
+                RivalBidder("riv_5", "Victor Vance", "Pionnier Aérospatial", "🚀", 1_800_000_000.0),
+                RivalBidder("riv_2", "Zhang Wei", "Titan de la Silicon Valley", "💻", 2_500_000_000.0)
+            )
+        ),
+        AuctionLot(
+            id = "auc_quantum_satellite_constellation",
+            title = "Constellation de 50 000 Satellites Laser Quantiques",
+            category = "Télécoms Spatiales",
+            description = "Monopole de chiffrement inconditionnel des transferts financiers mondiaux. +200% permanent et +$80M/s !",
+            startingBid = 2_000_000_000.0,
+            currentBid = 2_000_000_000.0,
+            highestBidderName = "Consortium Financier de Tokyo",
+            isPlayerWinning = false,
+            timeRemainingSec = 80,
+            permanentMultiplier = 2.00,
+            bonusCashYieldPerSec = 80_000_000.0,
+            iconEmoji = "🛰️",
+            activeRivals = listOf(
+                RivalBidder("riv_3", "Elena Rostova", "Magnat de l'Acier", "💎", 6_000_000_000.0),
+                RivalBidder("riv_4", "Sofia Al-Mansoor", "Héritière Immobilière", "👑", 10_000_000_000.0)
+            )
+        ),
+        AuctionLot(
+            id = "auc_stellar_fusion_monopoly",
+            title = "Monopole Mondial de Fusion Nucléaire ITER-X",
+            category = "Énergie Globale",
+            description = "Propriété exclusive de tous les réacteurs à fusion commerciale de la planète. +350% permanent et +$500M/s !",
+            startingBid = 10_000_000_000.0,
+            currentBid = 10_000_000_000.0,
+            highestBidderName = "Fonds Souverain d'Abou Dabi",
+            isPlayerWinning = false,
+            timeRemainingSec = 90,
+            permanentMultiplier = 3.50,
+            bonusCashYieldPerSec = 500_000_000.0,
+            iconEmoji = "☀️",
+            activeRivals = listOf(
+                RivalBidder("riv_1", "Lord Sterling", "Baron du Pétrole", "🎩", 25_000_000_000.0),
+                RivalBidder("riv_4", "Sofia Al-Mansoor", "Héritière Immobilière", "👑", 50_000_000_000.0)
+            )
         )
     )
 
@@ -1930,6 +2523,54 @@ object GameRepository {
             baseRevenuePerSec = 18_000_000.0,
             iconEmoji = "🧠",
             description = "Le laboratoire de recherche le plus avancé du monde en automatisation industrielle et intelligence artificielle autonome."
+        ),
+        CorporateTakeover(
+            id = "corp_chronos_defense",
+            name = "Chronos Quantum Defense & Satellites",
+            industry = "Défense Spatiale & Satellites",
+            rivalCeoName = "Général Marcus Vance",
+            rivalCeoAvatar = "🎖️",
+            totalEnterpriseValue = 2_500_000_000.0,
+            ownedStakePercentage = 0,
+            baseRevenuePerSec = 95_000_000.0,
+            iconEmoji = "🛡️",
+            description = "Leader mondial de la sécurité orbitale et des boucliers ioniques protégeant les corridors spatiaux."
+        ),
+        CorporateTakeover(
+            id = "corp_apex_sovereign_bank",
+            name = "Apex Sovereign Bank & Swiss Vaults",
+            industry = "Haute Finance Souveraine",
+            rivalCeoName = "Lord Archibald Sterling",
+            rivalCeoAvatar = "🎩",
+            totalEnterpriseValue = 15_000_000_000.0,
+            ownedStakePercentage = 0,
+            baseRevenuePerSec = 650_000_000.0,
+            iconEmoji = "🏦",
+            description = "Banque dépositaire des réserves d'or et des réserves de change de cinquante nations souveraines."
+        ),
+        CorporateTakeover(
+            id = "corp_astromining_syndicate",
+            name = "AstroMining Asteroid Belt Syndicate",
+            industry = "Minage Extraterrestre",
+            rivalCeoName = "Dr. Valeri Volkov",
+            rivalCeoAvatar = "⛏️",
+            totalEnterpriseValue = 80_000_000_000.0,
+            ownedStakePercentage = 0,
+            baseRevenuePerSec = 4_000_000_000.0,
+            iconEmoji = "☄️",
+            description = "Monopole de forage de platine, rhodium et lithium sur l'ensemble de la ceinture d'astéroïdes."
+        ),
+        CorporateTakeover(
+            id = "corp_galactic_nexus",
+            name = "Galactic Singularity Conglomerate",
+            industry = "Holding Interplanétaire Suprême",
+            rivalCeoName = "AI Overseer Genesis-9",
+            rivalCeoAvatar = "🤖",
+            totalEnterpriseValue = 500_000_000_000.0,
+            ownedStakePercentage = 0,
+            baseRevenuePerSec = 30_000_000_000.0,
+            iconEmoji = "🌌",
+            description = "Le conglomérat le plus colossal jamais conçu unissant les infrastructures énergétiques et orbitales de l'humanité."
         )
     )
 
@@ -1971,6 +2612,30 @@ object GameRepository {
             multiplierBoost = 1.00,
             iconEmoji = "🌌"
         ),
+        ExpandedTechNode(
+            id = "tech_ai_4",
+            name = "Moteur de Simulation Multiversel",
+            branch = TechBranch.AI_COMPUTING,
+            tier = 4,
+            description = "Simule des milliards de scénarios de marchés à la nanoseconde. +150% passif & bourses.",
+            cost = 150_000_000.0,
+            requiresTechId = "tech_ai_3",
+            bonusLabel = "+150% Passif & Bourses",
+            multiplierBoost = 1.50,
+            iconEmoji = "🔮"
+        ),
+        ExpandedTechNode(
+            id = "tech_ai_5",
+            name = "Conscience Synthétique Universelle",
+            branch = TechBranch.AI_COMPUTING,
+            tier = 5,
+            description = "L'IA devient le cerveau unifié de toute l'activité économique mondiale et spatiale. +300% global !",
+            cost = 1_500_000_000.0,
+            requiresTechId = "tech_ai_4",
+            bonusLabel = "+300% Global",
+            multiplierBoost = 3.00,
+            iconEmoji = "🧠"
+        ),
 
         // BRANCHE ÉNERGIE & FUSION
         ExpandedTechNode(
@@ -2008,6 +2673,30 @@ object GameRepository {
             bonusLabel = "+120% Production",
             multiplierBoost = 1.20,
             iconEmoji = "☀️"
+        ),
+        ExpandedTechNode(
+            id = "tech_nrg_4",
+            name = "Générateur à Micro Trou Noir",
+            branch = TechBranch.ENERGY_FUSION,
+            tier = 4,
+            description = "Extraction d'énergie par radiation de Hawking ultra-dense. +180% de cashflow permanent.",
+            cost = 250_000_000.0,
+            requiresTechId = "tech_nrg_3",
+            bonusLabel = "+180% Cashflow",
+            multiplierBoost = 1.80,
+            iconEmoji = "🕳️"
+        ),
+        ExpandedTechNode(
+            id = "tech_nrg_5",
+            name = "Captation d'Énergie du Vide Quantique",
+            branch = TechBranch.ENERGY_FUSION,
+            tier = 5,
+            description = "Exploite les fluctuations d'énergie du point zéro de l'espace. +350% de production totale !",
+            cost = 3_000_000_000.0,
+            requiresTechId = "tech_nrg_4",
+            bonusLabel = "+350% Énergie Illimitée",
+            multiplierBoost = 3.50,
+            iconEmoji = "⚡"
         ),
 
         // BRANCHE SPATIAL & MINAGE
@@ -2047,6 +2736,30 @@ object GameRepository {
             multiplierBoost = 1.50,
             iconEmoji = "🪐"
         ),
+        ExpandedTechNode(
+            id = "tech_spc_4",
+            name = "Élévateur Orbital en Nanotubes",
+            branch = TechBranch.SPACE_MINING,
+            tier = 4,
+            description = "Achemine quotidiennement des millions de tonnes de fret orbital à coût nul. +220% minage spatial.",
+            cost = 400_000_000.0,
+            requiresTechId = "tech_spc_3",
+            bonusLabel = "+220% Minage Spatial",
+            multiplierBoost = 2.20,
+            iconEmoji = "🛰️"
+        ),
+        ExpandedTechNode(
+            id = "tech_spc_5",
+            name = "Flotte de Moissonneurs Stellaires Automatisés",
+            branch = TechBranch.SPACE_MINING,
+            tier = 5,
+            description = "Drones moissonneurs autonomes écumant la ceinture d'astéroïdes. +450% de rendement galactique !",
+            cost = 5_000_000_000.0,
+            requiresTechId = "tech_spc_4",
+            bonusLabel = "+450% Fret Galactique",
+            multiplierBoost = 4.50,
+            iconEmoji = "🛸"
+        ),
 
         // BRANCHE BIO-NANOTECH
         ExpandedTechNode(
@@ -2084,6 +2797,30 @@ object GameRepository {
             bonusLabel = "+135% Logistique",
             multiplierBoost = 1.35,
             iconEmoji = "🌀"
+        ),
+        ExpandedTechNode(
+            id = "tech_bio_4",
+            name = "Reconfiguration Cellulaire Instantanée",
+            branch = TechBranch.BIO_NANOTECH,
+            tier = 4,
+            description = "Matériaux auto-réparateurs adaptatifs pour toutes les installations. +200% clic et passif.",
+            cost = 300_000_000.0,
+            requiresTechId = "tech_bio_3",
+            bonusLabel = "+200% Clic & Passif",
+            multiplierBoost = 2.00,
+            iconEmoji = "🧬"
+        ),
+        ExpandedTechNode(
+            id = "tech_bio_5",
+            name = "Réseau Neuronal Synthétique Universel",
+            branch = TechBranch.BIO_NANOTECH,
+            tier = 5,
+            description = "Biologie synthétique assurant la productivité absolue et éternelle de l'empire. +400% global !",
+            cost = 4_000_000_000.0,
+            requiresTechId = "tech_bio_4",
+            bonusLabel = "+400% Efficience Totale",
+            multiplierBoost = 4.00,
+            iconEmoji = "🌐"
         )
     )
 
@@ -2102,6 +2839,174 @@ object GameRepository {
             clickPowerBoostPercent = 0.15,
             iconEmoji = "🏡",
             imageDrawableRes = R.drawable.img_residence_home_alone
+        ),
+        LuxuryAsset(
+            id = "lux_gold_vault",
+            name = "Coffre-Fort Lingots d'Or (24 Carats)",
+            category = "Shopping & Luxe",
+            location = "Fort Knox, USA",
+            description = "50 lingots d'or pur certifiés 999.9 d'une valeur inestimable stockés dans un coffre suisse à haute sécurité.",
+            cost = 850_000.0,
+            isPurchased = false,
+            prestigeScore = 180,
+            rentRevenuePerSec = 0.0,
+            passiveIncomeMultiplier = 0.08,
+            clickPowerBoostPercent = 0.12,
+            iconEmoji = "🪙"
+        ),
+        LuxuryAsset(
+            id = "lux_diamond_pink",
+            name = "Collier Diamants Impérial Pink Star",
+            category = "Shopping & Luxe",
+            location = "Place Vendôme, Paris",
+            description = "Pièce d'exception sertie d'un diamant rose de 59 carats d'une pureté absolue, joyau de joaillerie royale.",
+            cost = 12_500_000.0,
+            isPurchased = false,
+            prestigeScore = 880,
+            rentRevenuePerSec = 0.0,
+            passiveIncomeMultiplier = 0.22,
+            clickPowerBoostPercent = 0.30,
+            iconEmoji = "💎"
+        ),
+        LuxuryAsset(
+            id = "lux_birkin_collection",
+            name = "Collection Haute Couture & Sacs VIP",
+            category = "Shopping & Luxe",
+            location = "Milan, Italie",
+            description = "Collection privée de 15 sacs de haute couture rarissimes en cuirs précieux et ornements or massif.",
+            cost = 450_000.0,
+            isPurchased = false,
+            prestigeScore = 95,
+            rentRevenuePerSec = 0.0,
+            passiveIncomeMultiplier = 0.06,
+            clickPowerBoostPercent = 0.08,
+            iconEmoji = "👜"
+        ),
+        LuxuryAsset(
+            id = "lux_ferrari_gto",
+            name = "Ferrari 250 GTO Vintage 1962",
+            category = "Shopping & Luxe",
+            location = "Maranello, Italie",
+            description = "L'automobile la plus convoitée et précieuse au monde, état concours certifié par le musée officiel.",
+            cost = 48_000_000.0,
+            isPurchased = false,
+            prestigeScore = 2900,
+            rentRevenuePerSec = 0.0,
+            passiveIncomeMultiplier = 0.42,
+            clickPowerBoostPercent = 0.48,
+            iconEmoji = "🏎️"
+        ),
+        LuxuryAsset(
+            id = "lux_art_picasso",
+            name = "Chef-d'œuvre de Maître 'Période Bleue'",
+            category = "Shopping & Luxe",
+            location = "Sotheby's, Londres",
+            description = "Toile de maître originale exposée dans votre galerie privée sous protection périmétrique laser.",
+            cost = 35_000_000.0,
+            isPurchased = false,
+            prestigeScore = 2200,
+            rentRevenuePerSec = 0.0,
+            passiveIncomeMultiplier = 0.35,
+            clickPowerBoostPercent = 0.40,
+            iconEmoji = "🎨"
+        ),
+        LuxuryAsset(
+            id = "lux_ach160_chopper",
+            name = "Hélicoptère Airbus ACH160 Luxury",
+            category = "Shopping & Luxe",
+            location = "Marseille, France",
+            description = "Hélicoptère biturbine ultra-silencieux avec cabine VIP, cuir cousu main et finitions carbone ébène.",
+            cost = 18_500_000.0,
+            isPurchased = false,
+            prestigeScore = 1200,
+            rentRevenuePerSec = 0.0,
+            passiveIncomeMultiplier = 0.25,
+            clickPowerBoostPercent = 0.28,
+            iconEmoji = "🚁"
+        ),
+        LuxuryAsset(
+            id = "lux_wine_cellar",
+            name = "Cave à Vin & Millésimes Centenaires",
+            category = "Shopping & Luxe",
+            location = "Bordeaux, France",
+            description = "1000 flacons légendaires conservés dans une crayère gallo-romaine d'exception sous hygrométrie contrôlée.",
+            cost = 950_000.0,
+            isPurchased = false,
+            prestigeScore = 210,
+            rentRevenuePerSec = 0.0,
+            passiveIncomeMultiplier = 0.09,
+            clickPowerBoostPercent = 0.12,
+            iconEmoji = "🍾"
+        ),
+        LuxuryAsset(
+            id = "lux_haute_couture_house",
+            name = "Maison de Couture Avenue Montaigne",
+            category = "Shopping & Luxe",
+            location = "Paris 8ème, France",
+            description = "Salon de haute couture recevant l'élite mondiale et créant des tenues uniques sur mesure.",
+            cost = 15_000_000.0,
+            isPurchased = false,
+            prestigeScore = 1100,
+            rentRevenuePerSec = 0.0,
+            passiveIncomeMultiplier = 0.24,
+            clickPowerBoostPercent = 0.26,
+            iconEmoji = "👗"
+        ),
+        LuxuryAsset(
+            id = "lux_hypercar_hyperion",
+            name = "Hypercar Électrique Hyperion V16",
+            category = "Shopping & Luxe",
+            location = "Monaco",
+            description = "Bolide d'exception en fibre de carbone tressée, 2000 chevaux et vitesse de pointe de 480 km/h.",
+            cost = 3_200_000.0,
+            isPurchased = false,
+            prestigeScore = 420,
+            rentRevenuePerSec = 0.0,
+            passiveIncomeMultiplier = 0.18,
+            clickPowerBoostPercent = 0.25,
+            iconEmoji = "🏎️"
+        ),
+        LuxuryAsset(
+            id = "lux_superyacht_aurum",
+            name = "Superyacht Neobury 85 Metres",
+            category = "Shopping & Luxe",
+            location = "Saint-Tropez, France",
+            description = "Yacht de haute mer avec héliport, spa panoramique, sous-marin de poche et équipage de 24 marins.",
+            cost = 125_000_000.0,
+            isPurchased = false,
+            prestigeScore = 5200,
+            rentRevenuePerSec = 0.0,
+            passiveIncomeMultiplier = 0.70,
+            clickPowerBoostPercent = 0.65,
+            iconEmoji = "🛥️"
+        ),
+        LuxuryAsset(
+            id = "lux_private_jet_g700",
+            name = "Jet Privé Gulfstream G700 VIP",
+            category = "Shopping & Luxe",
+            location = "Genève, Suisse",
+            description = "Rayon d'action intercontinental, suite présidentielle avec lit King-Size et salle de réunion haute sécurité.",
+            cost = 78_000_000.0,
+            isPurchased = false,
+            prestigeScore = 3400,
+            rentRevenuePerSec = 0.0,
+            passiveIncomeMultiplier = 0.50,
+            clickPowerBoostPercent = 0.55,
+            iconEmoji = "🛩️"
+        ),
+        LuxuryAsset(
+            id = "lux_watch_tourbillon",
+            name = "Montre Tourbillon Céleste Diamants",
+            category = "Shopping & Luxe",
+            location = "Zurich, Suisse",
+            description = "Garde-temps d'artisanat suisse à complication astronomique, boîtier en platine serti de 320 diamants baguettes.",
+            cost = 1_850_000.0,
+            isPurchased = false,
+            prestigeScore = 260,
+            rentRevenuePerSec = 0.0,
+            passiveIncomeMultiplier = 0.10,
+            clickPowerBoostPercent = 0.20,
+            iconEmoji = "⌚"
         ),
         LuxuryAsset(
             id = "lux_contemporary_villa",
@@ -2258,6 +3163,76 @@ object GameRepository {
             passiveIncomeMultiplier = 1.20,
             clickPowerBoostPercent = 1.50,
             iconEmoji = "🌌"
+        ),
+        LuxuryAsset(
+            id = "lux_superyacht_solaris",
+            name = "Giga-Yacht 'Solaris Sovereign' 180m",
+            category = "Shopping & Luxe",
+            location = "Monaco & Saint-Tropez",
+            description = "Palais flottant de 180 mètres avec deux héliports, sous-marin privé, cinéma et piscine à fond de verre.",
+            cost = 1_200_000_000.0,
+            isPurchased = false,
+            prestigeScore = 35000,
+            rentRevenuePerSec = 2_500_000.0,
+            passiveIncomeMultiplier = 1.50,
+            clickPowerBoostPercent = 1.80,
+            iconEmoji = "🛥️"
+        ),
+        LuxuryAsset(
+            id = "lux_monaco_peninsula_palace",
+            name = "Palais Princier Presqu'île de Monaco",
+            category = "Villas",
+            location = "Monaco-Ville",
+            description = "Domaine souverain fortifié surplombant la Méditerranée avec marina privée et réserve d'or sous-marine.",
+            cost = 4_500_000_000.0,
+            isPurchased = false,
+            prestigeScore = 75000,
+            rentRevenuePerSec = 8_000_000.0,
+            passiveIncomeMultiplier = 2.00,
+            clickPowerBoostPercent = 2.20,
+            iconEmoji = "🏰"
+        ),
+        LuxuryAsset(
+            id = "lux_lunar_domed_sanctuary",
+            name = "Biosphère Lunaire 'Mer de la Tranquillité'",
+            category = "Îles & Domaines",
+            location = "Surface Lunaire",
+            description = "Dôme de biosphère privatisé de 50 hectares reproduisant un climat tropical sous le ciel étoilé lunaire.",
+            cost = 18_000_000_000.0,
+            isPurchased = false,
+            prestigeScore = 180000,
+            rentRevenuePerSec = 35_000_000.0,
+            passiveIncomeMultiplier = 2.80,
+            clickPowerBoostPercent = 3.00,
+            iconEmoji = "🌕"
+        ),
+        LuxuryAsset(
+            id = "lux_mars_pyramid_citadel",
+            name = "Citadelle Pyramide Martienne Cydonia",
+            category = "Gratte-Ciel",
+            location = "Cydonia Mensae, Mars",
+            description = "Mégastructure pyramidale sous nanoverre abritant jardins d'acclimatation et salons d'apparat interplanétaires.",
+            cost = 65_000_000_000.0,
+            isPurchased = false,
+            prestigeScore = 500000,
+            rentRevenuePerSec = 150_000_000.0,
+            passiveIncomeMultiplier = 3.80,
+            clickPowerBoostPercent = 4.00,
+            iconEmoji = "🏛️"
+        ),
+        LuxuryAsset(
+            id = "lux_interstellar_flagship_ark",
+            name = "Vaisseau Amiral Souverain 'L'Impérissable'",
+            category = "Shopping & Luxe",
+            location = "Orbite Martienne",
+            description = "Croiseur stellaire de luxe long de 2 kilomètres, propulsé à l'antimatière avec salons de réception diplomatiques.",
+            cost = 250_000_000_000.0,
+            isPurchased = false,
+            prestigeScore = 1500000,
+            rentRevenuePerSec = 600_000_000.0,
+            passiveIncomeMultiplier = 5.00,
+            clickPowerBoostPercent = 5.00,
+            iconEmoji = "🛸"
         )
     )
 }

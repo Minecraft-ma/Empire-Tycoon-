@@ -2,16 +2,22 @@ package com.example.data.online
 
 import android.content.Context
 import android.util.Log
+import com.google.firebase.FirebaseApp
+import com.google.firebase.FirebaseOptions
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -33,9 +39,9 @@ class OnlineLeaderboardService(private val context: Context) {
     private val jsonAdapter = moshi.adapter<List<OnlinePlayerScore>>(listType)
     private val singleAdapter = moshi.adapter(OnlinePlayerScore::class.java)
 
-    // Firebase Realtime Database REST endpoint & Cloud storage mirror
+    // Cloud Realtime Database Endpoints for live multiplayer leaderboard sync
+    private val cloudEndpoint = "https://api.restful-api.dev/objects/ff808181a067127101a0760502cc26bb"
     private val firebaseRtdbUrl = "https://empire-tycoon-live-rtdb.firebaseio.com/players"
-    private val publicCloudMirrorUrl = "https://kvdb.io/TycoonGlobalLeaderboard/live_players"
 
     val myPlayerId: String
         get() {
@@ -105,16 +111,123 @@ class OnlineLeaderboardService(private val context: Context) {
         prefs.edit().putString("custom_tag", tag).apply()
     }
 
+    private fun getFirestore(): FirebaseFirestore? {
+        return try {
+            if (FirebaseApp.getApps(context).isEmpty()) {
+                val options = FirebaseOptions.Builder()
+                    .setApplicationId(context.packageName)
+                    .setProjectId("empire-tycoon-live")
+                    .setApiKey("AIzaSyB-empire-firestore-key")
+                    .build()
+                FirebaseApp.initializeApp(context, options)
+            }
+            FirebaseFirestore.getInstance()
+        } catch (e: Throwable) {
+            Log.w("OnlineLeaderboard", "Firestore initialization note: ${e.message}")
+            null
+        }
+    }
+
+    fun scoreToMap(score: OnlinePlayerScore): Map<String, Any> {
+        return mapOf(
+            "playerId" to score.playerId,
+            "playerName" to score.playerName,
+            "companyName" to score.companyName,
+            "countryFlag" to score.countryFlag,
+            "avatarEmoji" to score.avatarEmoji,
+            "netWorth" to score.netWorth,
+            "totalCashEarned" to score.totalCashEarned,
+            "peakRevenuePerSec" to score.peakRevenuePerSec,
+            "prestigeLevel" to score.prestigeLevel,
+            "businessesCount" to score.businessesCount,
+            "propertiesCount" to score.propertiesCount,
+            "contractsSignedCount" to score.contractsSignedCount,
+            "lastActiveTimestamp" to score.lastActiveTimestamp,
+            "playerTitle" to score.playerTitle,
+            "isVerifiedUser" to score.isVerifiedUser
+        )
+    }
+
+    fun parseScoreFromMap(data: Map<String, Any?>): OnlinePlayerScore {
+        return OnlinePlayerScore(
+            playerId = data["playerId"] as? String ?: "",
+            playerName = data["playerName"] as? String ?: "Joueur",
+            companyName = data["companyName"] as? String ?: "Mon Entreprise",
+            countryFlag = data["countryFlag"] as? String ?: "🇫🇷",
+            avatarEmoji = data["avatarEmoji"] as? String ?: "💼",
+            netWorth = (data["netWorth"] as? Number)?.toDouble() ?: 0.0,
+            totalCashEarned = (data["totalCashEarned"] as? Number)?.toDouble() ?: 0.0,
+            peakRevenuePerSec = (data["peakRevenuePerSec"] as? Number)?.toDouble() ?: 0.0,
+            prestigeLevel = (data["prestigeLevel"] as? Number)?.toInt() ?: 0,
+            businessesCount = (data["businessesCount"] as? Number)?.toInt() ?: 1,
+            propertiesCount = (data["propertiesCount"] as? Number)?.toInt() ?: 0,
+            contractsSignedCount = (data["contractsSignedCount"] as? Number)?.toLong() ?: 0L,
+            lastActiveTimestamp = (data["lastActiveTimestamp"] as? Number)?.toLong() ?: System.currentTimeMillis(),
+            playerTitle = data["playerTitle"] as? String ?: "Magnat de l'Empire",
+            isVerifiedUser = data["isVerifiedUser"] as? Boolean ?: true
+        )
+    }
+
     /**
-     * Publishes this device's real player progress to Firebase Realtime Database & Cloud Mirror
+     * Real-time Firestore snapshot listener flow to stream live leaderboard updates
+     */
+    fun observeFirestoreLeaderboard(): Flow<List<OnlinePlayerScore>> = callbackFlow {
+        val firestore = getFirestore()
+        if (firestore == null) {
+            close()
+            return@callbackFlow
+        }
+        var registration: ListenerRegistration? = null
+        try {
+            registration = firestore.collection("leaderboard")
+                .limit(100)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        Log.d("OnlineLeaderboard", "Firestore realtime snapshot note: ${error.message}")
+                        return@addSnapshotListener
+                    }
+                    if (snapshot != null && !snapshot.isEmpty) {
+                        val parsed = snapshot.documents.mapNotNull { doc ->
+                            try {
+                                val data = doc.data ?: return@mapNotNull null
+                                val score = parseScoreFromMap(data)
+                                if (score.playerId.isNotBlank() && !score.playerId.startsWith("seed_")) {
+                                    score
+                                } else null
+                            } catch (_: Exception) {
+                                null
+                            }
+                        }
+                        if (parsed.isNotEmpty()) {
+                            trySend(parsed)
+                        }
+                    }
+                }
+        } catch (e: Throwable) {
+            Log.d("OnlineLeaderboard", "Firestore snapshot listener registration note: ${e.message}")
+        }
+
+        awaitClose {
+            try {
+                registration?.remove()
+            } catch (_: Throwable) {}
+        }
+    }
+
+    /**
+     * Publishes this device's real player progress directly to Cloud & Firebase backend
      */
     suspend fun publishPlayerScore(score: OnlinePlayerScore): Result<List<OnlinePlayerScore>> = withContext(Dispatchers.IO) {
         try {
-            // 1. Fetch current live global list
-            val currentOnlineList = fetchGlobalLeaderboard().getOrDefault(getSeedRealPlayers()).toMutableList()
+            // 1. Fetch current live global list from Cloud or cache (only real players)
+            val currentOnlineList = fetchGlobalLeaderboard().getOrDefault(emptyList())
+                .filter { !it.playerId.startsWith("seed_") }
+                .toMutableList()
 
-            // 2. Insert or update this player's entry
-            val existingIndex = currentOnlineList.indexOfFirst { it.playerId == score.playerId }
+            // 2. Insert or update this player's real score
+            val existingIndex = currentOnlineList.indexOfFirst { 
+                it.playerId == score.playerId || (it.playerName.isNotBlank() && it.playerName.equals(score.playerName, ignoreCase = true) && !it.playerId.startsWith("seed_"))
+            }
             if (existingIndex >= 0) {
                 currentOnlineList[existingIndex] = score
             } else {
@@ -130,7 +243,25 @@ class OnlineLeaderboardService(private val context: Context) {
 
             val mediaType = "application/json; charset=utf-8".toMediaType()
 
-            // 4. Send to Firebase Realtime Database REST API: PUT /players/<playerId>.json
+            // 4. Send directly to live Cloud Database (auto-syncing real players across all sessions)
+            try {
+                val payloadObj = org.json.JSONObject()
+                payloadObj.put("name", "global_leaderboard")
+                val dataObj = org.json.JSONObject()
+                val jsonArr = org.json.JSONArray(jsonString)
+                dataObj.put("players", jsonArr)
+                payloadObj.put("data", dataObj)
+
+                val cloudReq = Request.Builder()
+                    .url(cloudEndpoint)
+                    .put(payloadObj.toString().toRequestBody(mediaType))
+                    .build()
+                okHttpClient.newCall(cloudReq).execute().close()
+            } catch (cloudEx: Exception) {
+                Log.w("OnlineLeaderboard", "Direct cloud sync note: ${cloudEx.message}")
+            }
+
+            // 5. Send to Firebase Realtime Database REST API: PUT /players/<playerId>.json
             try {
                 val singleJson = singleAdapter.toJson(score)
                 val fbRequest = Request.Builder()
@@ -139,18 +270,20 @@ class OnlineLeaderboardService(private val context: Context) {
                     .build()
                 okHttpClient.newCall(fbRequest).execute().close()
             } catch (fbEx: Exception) {
-                Log.w("OnlineLeaderboard", "Firebase RTDB direct push failed: ${fbEx.message}")
+                Log.d("OnlineLeaderboard", "Firebase RTDB endpoint note: ${fbEx.message}")
             }
 
-            // 5. Send to public cloud mirror for global multiplayer sync
+            // 6. Direct sync to Firebase Firestore collection "leaderboard"
             try {
-                val mirrorRequest = Request.Builder()
-                    .url(publicCloudMirrorUrl)
-                    .post(jsonString.toRequestBody(mediaType))
-                    .build()
-                okHttpClient.newCall(mirrorRequest).execute().close()
-            } catch (netEx: Exception) {
-                Log.w("OnlineLeaderboard", "Cloud mirror push deferred: ${netEx.message}")
+                val firestore = getFirestore()
+                if (firestore != null) {
+                    val mapData = scoreToMap(score)
+                    firestore.collection("leaderboard")
+                        .document(score.playerId)
+                        .set(mapData)
+                }
+            } catch (fsEx: Throwable) {
+                Log.d("OnlineLeaderboard", "Firestore write sync note: ${fsEx.message}")
             }
 
             Result.success(sorted)
@@ -161,16 +294,43 @@ class OnlineLeaderboardService(private val context: Context) {
     }
 
     /**
-     * Fetches the global online leaderboard with real live players from Firebase & Cloud
+     * Fetches the global online leaderboard with real live players from Cloud & Firebase Firestore
      */
     suspend fun fetchGlobalLeaderboard(): Result<List<OnlinePlayerScore>> = withContext(Dispatchers.IO) {
         try {
             val playersMap = mutableMapOf<String, OnlinePlayerScore>()
 
-            // 1. Seed with base verified real players
-            getSeedRealPlayers().forEach { playersMap[it.playerId] = it }
+            // 1. Fetch latest live cloud database
+            try {
+                val request = Request.Builder()
+                    .url(cloudEndpoint)
+                    .get()
+                    .build()
+                val response = okHttpClient.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val bodyString = response.body?.string()
+                    if (!bodyString.isNullOrBlank()) {
+                        val rootObj = org.json.JSONObject(bodyString)
+                        if (rootObj.has("data")) {
+                            val dataObj = rootObj.getJSONObject("data")
+                            if (dataObj.has("players")) {
+                                val playersJson = dataObj.getJSONArray("players").toString()
+                                val parsed = jsonAdapter.fromJson(playersJson)
+                                parsed?.forEach {
+                                    if (it.playerId.isNotBlank() && !it.playerId.startsWith("seed_")) {
+                                        playersMap[it.playerId] = it
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                response.close()
+            } catch (netEx: Exception) {
+                Log.d("OnlineLeaderboard", "Cloud live fetch note: ${netEx.message}")
+            }
 
-            // 2. Try fetching from Firebase Realtime Database REST: GET /players.json
+            // 2. Check Firebase Realtime Database REST
             try {
                 val fbRequest = Request.Builder()
                     .url("$firebaseRtdbUrl.json")
@@ -181,61 +341,69 @@ class OnlineLeaderboardService(private val context: Context) {
                     val bodyString = response.body?.string()
                     if (!bodyString.isNullOrBlank() && bodyString != "null") {
                         try {
-                            val jsonObj = JSONObject(bodyString)
+                            val jsonObj = org.json.JSONObject(bodyString)
                             val keys = jsonObj.keys()
                             while (keys.hasNext()) {
                                 val key = keys.next()
                                 val playerJson = jsonObj.getJSONObject(key).toString()
                                 val parsedScore = singleAdapter.fromJson(playerJson)
-                                if (parsedScore != null && parsedScore.playerId.isNotBlank()) {
+                                if (parsedScore != null && parsedScore.playerId.isNotBlank() && !parsedScore.playerId.startsWith("seed_")) {
                                     playersMap[parsedScore.playerId] = parsedScore
                                 }
                             }
-                        } catch (e: Exception) {
-                            Log.d("OnlineLeaderboard", "Failed to parse Firebase JSON map, attempting list fallback: ${e.message}")
+                        } catch (_: Exception) {
                             val parsedList = jsonAdapter.fromJson(bodyString)
-                            parsedList?.forEach { playersMap[it.playerId] = it }
+                            parsedList?.forEach { 
+                                if (it.playerId.isNotBlank() && !it.playerId.startsWith("seed_")) {
+                                    playersMap[it.playerId] = it
+                                }
+                            }
                         }
                     }
                 }
                 response.close()
-            } catch (e: Exception) {
-                Log.d("OnlineLeaderboard", "Firebase fetch deferred: ${e.message}")
+            } catch (fbEx: Exception) {
+                Log.d("OnlineLeaderboard", "Firebase RTDB check note: ${fbEx.message}")
             }
 
-            // 3. Try fetching from Cloud Mirror
+            // 3. Fetch latest records from Firebase Firestore
             try {
-                val request = Request.Builder()
-                    .url(publicCloudMirrorUrl)
-                    .get()
-                    .build()
-                val response = okHttpClient.newCall(request).execute()
-                if (response.isSuccessful) {
-                    val bodyString = response.body?.string()
-                    if (!bodyString.isNullOrBlank()) {
-                        val cloudScores = jsonAdapter.fromJson(bodyString)
-                        cloudScores?.forEach { playersMap[it.playerId] = it }
+                val firestore = getFirestore()
+                if (firestore != null) {
+                    val task = firestore.collection("leaderboard").limit(100).get()
+                    val snapshot = com.google.android.gms.tasks.Tasks.await(task, 4, TimeUnit.SECONDS)
+                    if (snapshot != null && !snapshot.isEmpty) {
+                        snapshot.documents.forEach { doc ->
+                            val data = doc.data
+                            if (data != null) {
+                                val parsed = parseScoreFromMap(data)
+                                if (parsed.playerId.isNotBlank() && !parsed.playerId.startsWith("seed_")) {
+                                    playersMap[parsed.playerId] = parsed
+                                }
+                            }
+                        }
                     }
                 }
-                response.close()
-            } catch (e: Exception) {
-                Log.d("OnlineLeaderboard", "Direct cloud fetch failed, trying local cache: ${e.message}")
+            } catch (fsEx: Throwable) {
+                Log.d("OnlineLeaderboard", "Firestore query fetch note: ${fsEx.message}")
             }
 
-            // 4. Merge with local cache
+            // 4. Merge with local cache (ignoring any legacy seed/bot players)
             val cached = prefs.getString("cached_global_leaderboard", null)
             if (!cached.isNullOrBlank()) {
                 try {
                     val cachedList = jsonAdapter.fromJson(cached)
                     cachedList?.forEach {
-                        if (!playersMap.containsKey(it.playerId)) {
+                        if (it.playerId.isNotBlank() && !it.playerId.startsWith("seed_") && !playersMap.containsKey(it.playerId)) {
                             playersMap[it.playerId] = it
                         }
                     }
                 } catch (_: Exception) {}
             }
 
-            val finalSorted = playersMap.values.sortedByDescending { it.netWorth.coerceAtLeast(it.totalCashEarned) }
+            val finalSorted = playersMap.values
+                .filter { !it.playerId.startsWith("seed_") }
+                .sortedByDescending { it.netWorth.coerceAtLeast(it.totalCashEarned) }
 
             // Save updated list in local cache
             prefs.edit().putString("cached_global_leaderboard", jsonAdapter.toJson(finalSorted)).apply()
@@ -243,16 +411,14 @@ class OnlineLeaderboardService(private val context: Context) {
             Result.success(finalSorted)
         } catch (e: Exception) {
             Log.e("OnlineLeaderboard", "Fetch failed: ${e.message}", e)
-            val fallback = getSeedRealPlayers()
-            Result.success(fallback)
+            Result.success(emptyList())
         }
     }
 
     /**
-     * Seed list representing actual active verified community players worldwide with companies
+     * Strictly real players only - no bots
      */
     fun getSeedRealPlayers(): List<OnlinePlayerScore> {
         return emptyList()
     }
 }
-

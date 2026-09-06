@@ -149,8 +149,8 @@ fun ExecutivePrestigeScreen(
                 onPurchaseAsset = onPurchaseLuxuryAsset
             )
             else -> {
-                val nextPrestigeCost = 50_000.0 * (state.prestigeLevel + 1) * (state.prestigeLevel + 1)
-                val canPrestige = state.totalCashEarned >= nextPrestigeCost
+                val nextPrestigeCost = state.nextPrestigeThreshold
+                val canPrestige = state.canPrestige
 
                 LazyColumn(
                     modifier = Modifier
@@ -276,7 +276,7 @@ fun ExecutivePrestigeScreen(
                     Spacer(modifier = Modifier.height(DesignSystem.Spacing.micro))
 
                     Text(
-                        text = "Vends ton empire actuel à un fonds souverain pour un bonus permanent de +150% !",
+                        text = "Vends ton empire actuel à un fonds souverain pour un bonus permanent de +50% de production sur toute la partie !",
                         color = TextSecondary,
                         fontSize = 11.sp,
                         lineHeight = 14.sp
@@ -299,8 +299,9 @@ fun ExecutivePrestigeScreen(
                         ),
                         shape = RoundedCornerShape(8.dp)
                     ) {
+                        val progressPercent = ((state.totalCashEarned / nextPrestigeCost) * 100).toInt().coerceIn(0, 100)
                         Text(
-                            text = if (canPrestige) "VENDRE ET PASSER AU PRESTIGE P${state.prestigeLevel + 1} (+150%)" else "Requis: ${MoneyFormatter.format(nextPrestigeCost)} cumulés",
+                            text = if (canPrestige) "VENDRE ET PASSER AU PRESTIGE P${state.prestigeLevel + 1} (+50%)" else "Requis: ${MoneyFormatter.format(nextPrestigeCost)} cumulés ($progressPercent%)",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Black,
                             maxLines = 1,

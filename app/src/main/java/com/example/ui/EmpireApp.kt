@@ -307,6 +307,8 @@ fun EmpireApp(
                         state = state,
                         onBuyStock = { ticker, qty -> viewModel.buyStock(ticker, qty) },
                         onSellStock = { ticker, qty -> viewModel.sellStock(ticker, qty) },
+                        onStakeCrypto = { ticker, qty -> viewModel.stakeCrypto(ticker, qty) },
+                        onUnstakeCrypto = { ticker, qty -> viewModel.unstakeCrypto(ticker, qty) },
                         onPlaceAuctionBid = { viewModel.placeAuctionBid(it) },
                         onBuyoutAuctionLot = { viewModel.buyoutAuctionLot(it) },
                         onResetAuctionLot = { viewModel.resetAuctionLot(it) },
@@ -456,6 +458,9 @@ fun EmpireApp(
                 onClearPlayerRuns = { viewModel.clearPlayerLeaderboardRuns() },
                 onPublishOnlineScore = { viewModel.publishMyScoreToOnlineLeaderboard() },
                 onRefreshOnline = { viewModel.fetchOnlineLeaderboard() },
+                onOpenAccountSetup = { viewModel.openAccountSetupDialog() },
+                onSignInGoogle = { viewModel.signInWithGoogle() },
+                onSignOut = { viewModel.signOutAuth() },
                 onDismiss = { viewModel.closeLeaderboard() }
             )
         }
@@ -513,11 +518,13 @@ fun EmpireApp(
             )
         }
 
-        // Custom Account Setup Dialog (No OAuth, Player Name & Company Name)
+        // Custom Account Setup Dialog with Firebase Auth & Cloud Sync
         if (state.isAccountSetupDialogOpen) {
             AccountSetupDialog(
                 state = state,
                 onDismiss = { viewModel.closeAccountSetupDialog() },
+                onSignInGoogle = { viewModel.signInWithGoogle() },
+                onSignOut = { viewModel.signOutAuth() },
                 onSaveAccount = { name, company, flag, avatar ->
                     viewModel.savePlayerAccount(name, company, flag, avatar)
                 }
