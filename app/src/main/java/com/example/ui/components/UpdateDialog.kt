@@ -199,7 +199,7 @@ fun UpdateDialog(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(130.dp),
+                        .height(115.dp),
                     colors = CardDefaults.cardColors(containerColor = DarkSurface),
                     shape = RoundedCornerShape(14.dp),
                     border = androidx.compose.foundation.BorderStroke(1.dp, DarkCardBorder)
@@ -226,7 +226,37 @@ fun UpdateDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Important Android Signature / Install notice card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.6f))
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("💡", fontSize = 13.sp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Conseil d'installation APK",
+                                color = Color(0xFF38BDF8),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = "Si Android affiche 'Conflit de signature' ou demande de désinstaller l'ancienne version, pas d'inquiétude : votre sauvegarde et classement sont 100% synchronisés sur le Cloud Firestore et seront automatiquement restaurés à la réinstallation !",
+                            color = Color(0xFFCBD5E1),
+                            fontSize = 10.sp,
+                            lineHeight = 14.sp
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Main Action Button: Download APK
                 Button(
@@ -251,8 +281,8 @@ fun UpdateDialog(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "TÉLÉCHARGER L'APK (DIRECT)",
-                        fontSize = 13.sp,
+                        text = "TÉLÉCHARGER L'APK (INSTALLATION)",
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Black
                     )
                 }

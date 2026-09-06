@@ -90,7 +90,7 @@ data class GameUiState(
     val activeNews: MarketNewsItem? = GameRepository.getDefaultNewsFeed().firstOrNull(),
     val isDailyRewardsDialogOpen: Boolean = false,
     val careerStats: CareerStats = CareerStats(),
-    val clickPower: Double = 0.50,
+    val clickPower: Double = 1.0,
     val clickLevel: Int = 1,
     val adBoostTimeRemainingSec: Int = 0,
     val frenzyProgress: Float = 0f,
@@ -583,7 +583,7 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
 
             val rawCash = saved.cash
             val rawTotal = saved.totalCashEarned
-            val sanitizedCash = if (rawCash.isNaN() || rawCash.isInfinite() || rawCash > 1e18 || rawCash < 0.0) 250.0 else rawCash
+            val sanitizedCash = if (rawCash.isNaN() || rawCash.isInfinite() || rawCash > 1e18 || rawCash < 0.0) 0.0 else rawCash
             val sanitizedTotal = if (rawTotal.isNaN() || rawTotal.isInfinite() || rawTotal > 1e18 || rawTotal < 0.0) sanitizedCash else rawTotal
             val sanitizedPrestigeMult = 1.0 + (saved.prestigeLevel * 0.50)
 
@@ -750,75 +750,9 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
     private fun startMainGameLoop() {
         viewModelScope.launch {
             while (true) {
-                val stateBefore = _uiState.value
-                val isEco = stateBefore.isBatterySaverEnabled
-                val elapsedSeconds = if (isEco) 0.5f else 0.1f
-                val delayMillis = if (isEco) 500L else 100L
-
-                delay(delayMillis)
+                delay(1000L)
 
                 val state = _uiState.value
-                val passiveRevenuePerTick = state.netPassiveRevenuePerSec * elapsedSeconds.toDouble()
-
-                // Update business cycle progress
-                val updatedBusinesses = state.businesses.map { biz ->
-                    if (biz.isUnlocked) {
-                        val progressIncrement = elapsedSeconds / biz.cycleTimeSeconds
-                        val newProgress = biz.currentCycleProgress + progressIncrement
-                        if (newProgress >= 1f) {
-                            biz.copy(currentCycleProgress = 0f)
-                        } else {
-                            biz.copy(currentCycleProgress = newProgress)
-                        }
-                    } else biz
-                }
-
-                // Frenzy timer countdown
-                var frenzyProgress = state.frenzyProgress
-                var isFrenzyActive = state.isFrenzyActive
-                var frenzyTimeRemaining = state.frenzyTimeRemainingSec
-                if (isFrenzyActive) {
-                    frenzyProgress = max(0f, frenzyProgress - (elapsedSeconds / 10.0f))
-                    if (frenzyProgress <= 0f) {
-                        isFrenzyActive = false
-                        frenzyTimeRemaining = 0
-                    } else {
-                        frenzyTimeRemaining = (frenzyProgress * 10).toInt()
-                    }
-                } else {
-                    if (System.currentTimeMillis() - lastTapTime > 2500 && frenzyProgress > 0f) {
-                        frenzyProgress = max(0f, frenzyProgress - (0.005f * (elapsedSeconds / 0.1f)))
-                    }
-                }
-
-                // Clean floating coins
-                val now = System.currentTimeMillis()
-                val activeFloatingCoins = state.floatingCoins.filter { now - it.id < 900 }
-
-                // Auto-tapper tick income
-                val autoTapIncome = if (state.isAutoTapperActive) state.cashPerTap else 0.0
-                val totalTickIncome = passiveRevenuePerTick + autoTapIncome
-
-                _uiState.update { current ->
-                    current.copy(
-                        cash = current.cash + totalTickIncome,
-                        totalCashEarned = current.totalCashEarned + totalTickIncome,
-                        dailyCashEarned = current.dailyCashEarned + totalTickIncome,
-                        totalTaps = if (current.isAutoTapperActive) current.totalTaps + 1 else current.totalTaps,
-                        businesses = updatedBusinesses,
-                        frenzyProgress = frenzyProgress,
-                        isFrenzyActive = isFrenzyActive,
-                        frenzyTimeRemainingSec = frenzyTimeRemaining,
-                        floatingCoins = activeFloatingCoins
-                    )
-                }
-            }
-        }
-
-        // 1-second interval timer
-        viewModelScope.launch {
-            while (true) {
-                delay(1000)
                 val now = System.currentTimeMillis()
                 val currentEpochDay = now / (1000L * 60L * 60L * 24L)
                 val millisInDay = now % (1000L * 60L * 60L * 24L)
@@ -828,8 +762,151 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
                 val seconds = (millisUntilMidnight % (1000L * 60L)) / 1000L
                 val countdownFormatted = String.format("%02dh %02dm %02ds", hours, minutes, seconds)
 
+                // 1. Seconds-based discrete income per 1.0s tick
+                val passiveRevenuePerSec = state.netPassiveRevenuePerSec
+                val autoTapIncome = if (state.isAutoTapperActive) state.cashPerTap * 2.0 else 0.0
+                val totalTickIncome = passiveRevenuePerSec + autoTapIncome
+
+                // 2. Update business cycle progress
+                val updatedBusinesses = state.businesses.map { biz ->
+                    if (biz.isUnlocked) {
+                        val progressIncrement = 1.0f / biz.cycleTimeSeconds.coerceAtLeast(0.5f)
+                        val newProgress = biz.currentCycleProgress + progressIncrement
+                        if (newProgress >= 1f) {
+                            biz.copy(currentCycleProgress = 0f)
+                        } else {
+                            biz.copy(currentCycleProgress = newProgress)
+                        }
+                    } else biz
+                }
+
+                // 3. Frenzy timer countdown
+                var frenzyProgress = state.frenzyProgress
+                var isFrenzyActive = state.isFrenzyActive
+                var frenzyTimeRemaining = state.frenzyTimeRemainingSec
+                if (isFrenzyActive) {
+                    frenzyProgress = max(0f, frenzyProgress - 0.10f)
+                    if (frenzyProgress <= 0f) {
+                        isFrenzyActive = false
+                        frenzyTimeRemaining = 0
+                    } else {
+                        frenzyTimeRemaining = (frenzyProgress * 10).toInt()
+                    }
+                } else {
+                    if (now - lastTapTime > 2500 && frenzyProgress > 0f) {
+                        frenzyProgress = max(0f, frenzyProgress - 0.05f)
+                    }
+                }
+
+                // 4. Clean floating coins
+                val activeFloatingCoins = state.floatingCoins.filter { now - it.id < 900 }
+
+                // 5. Timers decrement
+                val newCrisisTime = if (state.activeCrisis != null) max(0, state.crisisTimeRemainingSec - 1) else 0
+                val newCrisis = if (newCrisisTime == 0 && state.activeCrisis != null) null else state.activeCrisis
+                val newMultTime = max(0, state.multiplierTimeRemainingSec - 1)
+                val newMult = if (newMultTime == 0) 1.0 else state.globalMultiplier
+
+                val newAutoTime = if (state.isAutoTapperActive) max(0, state.autoTapperTimeRemainingSec - 1) else 0
+                val stillAutoActive = newAutoTime > 0
+                val newAdBoostTime = max(0, state.adBoostTimeRemainingSec - 1)
+
+                val updatedStats = state.careerStats.copy(
+                    totalPlayTimeSeconds = state.careerStats.totalPlayTimeSeconds + 1
+                )
+
+                // 6. Update auctions live countdown and simulate rival bids
+                var auctionWonMessage: String? = null
+                val updatedAuctionLots = state.auctionLots.map { lot ->
+                    if (!lot.isWonByPlayer && !lot.isExpired && lot.timeRemainingSec > 0) {
+                        val nextTime = lot.timeRemainingSec - 1
+                        if (nextTime == 0) {
+                            if (lot.isPlayerWinning) {
+                                auctionWonMessage = "🏆 Adjugé ! Vous avez remporté l'enchère '${lot.title}' !"
+                                lot.copy(timeRemainingSec = 0, isWonByPlayer = true, isExpired = true)
+                            } else {
+                                lot.copy(timeRemainingSec = 0, isExpired = true)
+                            }
+                        } else {
+                            var lotState = lot.copy(timeRemainingSec = nextTime)
+                            if (lot.isPlayerWinning && nextTime > 4 && Random.nextFloat() < 0.22f) {
+                                val affordableRivals = lot.activeRivals.filter { it.maxBudget >= lot.currentBid * 1.15 }
+                                if (affordableRivals.isNotEmpty()) {
+                                    val rival = affordableRivals.random()
+                                    val rivalBid = lot.currentBid * 1.15
+                                    lotState = lotState.copy(
+                                        currentBid = rivalBid,
+                                        highestBidderName = "${rival.name} (${rival.title})",
+                                        isPlayerWinning = false,
+                                        timeRemainingSec = nextTime + 5
+                                    )
+                                }
+                            }
+                            lotState
+                        }
+                    } else lot
+                }
+
+                if (auctionWonMessage != null) {
+                    triggerHapticFeedback(isStrong = true)
+                    showFeedback(auctionWonMessage!!)
+                }
+
+                // 7. Update sponsorship contracts countdown
+                var completedContractMessage: String? = null
+                val updatedSponsorships = state.sponsorshipContracts.map { contract ->
+                    if (contract.isActive) {
+                        val nextTime = max(0, contract.timeRemainingSeconds - 1)
+                        if (nextTime == 0) {
+                            completedContractMessage = "🤝 Contrat de Sponsoring terminé : '${contract.sponsorName}' a expiré. Vous pouvez le renouveler !"
+                            contract.copy(
+                                timeRemainingSeconds = 0,
+                                isCompleted = true,
+                                totalEarningsAccumulated = contract.totalEarningsAccumulated + contract.directPayoutPerSec
+                            )
+                        } else {
+                            contract.copy(
+                                timeRemainingSeconds = nextTime,
+                                totalEarningsAccumulated = contract.totalEarningsAccumulated + contract.directPayoutPerSec
+                            )
+                        }
+                    } else contract
+                }
+
+                if (completedContractMessage != null) {
+                    triggerHapticFeedback(isStrong = false)
+                    showFeedback(completedContractMessage!!)
+                }
+
+                // 8. Market Condition and Events
+                var newMarketCondition = state.marketCondition
+                var newMarketTime = max(0, state.marketConditionTimeRemainingSec - 1)
+                var marketFeedback: String? = null
+                var propertyDeduction = 0.0
+
+                if (newMarketTime == 0 && newMarketCondition != com.example.model.MarketCondition.STABLE) {
+                    newMarketCondition = com.example.model.MarketCondition.STABLE
+                    marketFeedback = "⚖️ L'économie se stabilise. Fin de la crise."
+                } else if (newMarketCondition == com.example.model.MarketCondition.STABLE && Random.nextFloat() < 0.008f) {
+                    val randomEvent = com.example.model.MarketCondition.entries.filter { it != com.example.model.MarketCondition.STABLE }.random()
+                    newMarketCondition = randomEvent
+                    newMarketTime = 40
+                    marketFeedback = "${randomEvent.emoji} ${randomEvent.title.uppercase()} : ${randomEvent.description}"
+
+                    if (randomEvent == com.example.model.MarketCondition.CRASH_IMMOBILIER && state.totalRealEstateEmpireValue > 0) {
+                        propertyDeduction = (state.totalRealEstateEmpireValue * 0.015).coerceAtMost(state.cash * 0.20)
+                        if (propertyDeduction > 0) {
+                            marketFeedback += " Prelevement charges de copropriété : -${MoneyFormatter.format(propertyDeduction)}"
+                        }
+                    }
+                }
+
+                if (marketFeedback != null) {
+                    triggerHapticFeedback(isStrong = true)
+                }
+
+                // 9. Update UI state in a unified discrete tick
                 _uiState.update { current ->
-                    // Check if new day
                     if (current.lastMissionDayEpoch > 0L && currentEpochDay > current.lastMissionDayEpoch) {
                         val allCompleted = current.dailyMissions.all { it.isCompleted }
                         val newStreak = if (allCompleted) current.dailyStreakDays + 1 else 1
@@ -837,126 +914,22 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
                         val newChests = GameRepository.getDefaultMilestoneChests(current.prestigeLevel)
                         val newDailyRewards = GameRepository.getDailyRewardsForStreak(newStreak, emptySet())
                         current.copy(
+                            cash = max(0.0, current.cash + totalTickIncome - propertyDeduction),
+                            totalCashEarned = current.totalCashEarned + totalTickIncome,
+                            dailyCashEarned = 0.0,
+                            totalTaps = if (current.isAutoTapperActive) current.totalTaps + 2 else current.totalTaps,
+                            businesses = updatedBusinesses,
+                            frenzyProgress = frenzyProgress,
+                            isFrenzyActive = isFrenzyActive,
+                            frenzyTimeRemainingSec = frenzyTimeRemaining,
+                            floatingCoins = activeFloatingCoins,
                             dailyMissions = newMissions,
                             dailyMilestoneChests = newChests,
                             dailyRewards = newDailyRewards,
                             dailyQuests = GameRepository.getDefaultDailyQuests(),
                             dailyStreakDays = newStreak,
                             lastMissionDayEpoch = currentEpochDay,
-                            dailyCashEarned = 0.0,
-                            timeUntilDailyResetFormatted = countdownFormatted
-                        )
-                    } else {
-                        val newCrisisTime = if (current.activeCrisis != null) {
-                            max(0, current.crisisTimeRemainingSec - 1)
-                        } else 0
-
-                        val newCrisis = if (newCrisisTime == 0 && current.activeCrisis != null) null else current.activeCrisis
-                        val newMultTime = max(0, current.multiplierTimeRemainingSec - 1)
-                        val newMult = if (newMultTime == 0) 1.0 else current.globalMultiplier
-
-                        val newAutoTime = if (current.isAutoTapperActive) max(0, current.autoTapperTimeRemainingSec - 1) else 0
-                        val stillAutoActive = newAutoTime > 0
-                        val newAdBoostTime = max(0, current.adBoostTimeRemainingSec - 1)
-
-                        val updatedStats = current.careerStats.copy(
-                            totalPlayTimeSeconds = current.careerStats.totalPlayTimeSeconds + 1
-                        )
-
-                        // Update auctions live countdown and simulate rival bids
-                        var auctionWonMessage: String? = null
-                        val updatedAuctionLots = current.auctionLots.map { lot ->
-                            if (!lot.isWonByPlayer && !lot.isExpired && lot.timeRemainingSec > 0) {
-                                val nextTime = lot.timeRemainingSec - 1
-                                if (nextTime == 0) {
-                                    if (lot.isPlayerWinning) {
-                                        auctionWonMessage = "🏆 Adjugé ! Vous avez remporté l'enchère '${lot.title}' !"
-                                        lot.copy(timeRemainingSec = 0, isWonByPlayer = true, isExpired = true)
-                                    } else {
-                                        // Expired without player win - can restart in 60s
-                                        lot.copy(timeRemainingSec = 0, isExpired = true)
-                                    }
-                                } else {
-                                    // Live bidding dynamics: if player is winning and time > 3, rivals might counter-bid
-                                    var lotState = lot.copy(timeRemainingSec = nextTime)
-                                    if (lot.isPlayerWinning && nextTime > 4 && Random.nextFloat() < 0.22f) {
-                                        val affordableRivals = lot.activeRivals.filter { it.maxBudget >= lot.currentBid * 1.15 }
-                                        if (affordableRivals.isNotEmpty()) {
-                                            val rival = affordableRivals.random()
-                                            val rivalBid = lot.currentBid * 1.15
-                                            lotState = lotState.copy(
-                                                currentBid = rivalBid,
-                                                highestBidderName = "${rival.name} (${rival.title})",
-                                                isPlayerWinning = false,
-                                                timeRemainingSec = nextTime + 5 // Anti-sniping extension
-                                            )
-                                        }
-                                    }
-                                    lotState
-                                }
-                            } else lot
-                        }
-
-                        if (auctionWonMessage != null) {
-                            triggerHapticFeedback(isStrong = true)
-                            showFeedback(auctionWonMessage!!)
-                        }
-
-                        // Update sponsorship contracts countdown and auto-completion
-                        var completedContractMessage: String? = null
-                        val updatedSponsorships = current.sponsorshipContracts.map { contract ->
-                            if (contract.isActive) {
-                                val nextTime = max(0, contract.timeRemainingSeconds - 1)
-                                if (nextTime == 0) {
-                                    completedContractMessage = "🤝 Contrat de Sponsoring terminé : '${contract.sponsorName}' a expiré. Vous pouvez le renouveler !"
-                                    contract.copy(
-                                        timeRemainingSeconds = 0,
-                                        isCompleted = true,
-                                        totalEarningsAccumulated = contract.totalEarningsAccumulated + contract.directPayoutPerSec
-                                    )
-                                } else {
-                                    contract.copy(
-                                        timeRemainingSeconds = nextTime,
-                                        totalEarningsAccumulated = contract.totalEarningsAccumulated + contract.directPayoutPerSec
-                                    )
-                                }
-                            } else contract
-                        }
-
-                        if (completedContractMessage != null) {
-                            triggerHapticFeedback(isStrong = false)
-                            showFeedback(completedContractMessage!!)
-                        }
-
-                        // Market Condition Timer and Economic Events
-                        var newMarketCondition = current.marketCondition
-                        var newMarketTime = max(0, current.marketConditionTimeRemainingSec - 1)
-                        var marketFeedback: String? = null
-                        var propertyDeduction = 0.0
-
-                        if (newMarketTime == 0 && newMarketCondition != com.example.model.MarketCondition.STABLE) {
-                            newMarketCondition = com.example.model.MarketCondition.STABLE
-                            marketFeedback = "⚖️ L'économie se stabilise. Fin de la crise."
-                        } else if (newMarketCondition == com.example.model.MarketCondition.STABLE && Random.nextFloat() < 0.008f) {
-                            val randomEvent = com.example.model.MarketCondition.entries.filter { it != com.example.model.MarketCondition.STABLE }.random()
-                            newMarketCondition = randomEvent
-                            newMarketTime = 40
-                            marketFeedback = "${randomEvent.emoji} ${randomEvent.title.uppercase()} : ${randomEvent.description}"
-
-                            if (randomEvent == com.example.model.MarketCondition.CRASH_IMMOBILIER && current.totalRealEstateEmpireValue > 0) {
-                                propertyDeduction = (current.totalRealEstateEmpireValue * 0.015).coerceAtMost(current.cash * 0.20)
-                                if (propertyDeduction > 0) {
-                                    marketFeedback += " Prelevement charges de copropriété : -${MoneyFormatter.format(propertyDeduction)}"
-                                }
-                            }
-                        }
-
-                        if (marketFeedback != null) {
-                            triggerHapticFeedback(isStrong = true)
-                        }
-
-                        current.copy(
-                            cash = max(0.0, current.cash - propertyDeduction),
+                            timeUntilDailyResetFormatted = countdownFormatted,
                             marketCondition = newMarketCondition,
                             marketConditionTimeRemainingSec = newMarketTime,
                             crisisTimeRemainingSec = newCrisisTime,
@@ -969,8 +942,33 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
                             auctionLots = updatedAuctionLots,
                             sponsorshipContracts = updatedSponsorships,
                             careerStats = updatedStats,
+                            feedbackMessage = marketFeedback ?: current.feedbackMessage
+                        )
+                    } else {
+                        current.copy(
+                            cash = max(0.0, current.cash + totalTickIncome - propertyDeduction),
+                            totalCashEarned = current.totalCashEarned + totalTickIncome,
+                            dailyCashEarned = current.dailyCashEarned + totalTickIncome,
+                            totalTaps = if (current.isAutoTapperActive) current.totalTaps + 2 else current.totalTaps,
+                            businesses = updatedBusinesses,
+                            frenzyProgress = frenzyProgress,
+                            isFrenzyActive = isFrenzyActive,
+                            frenzyTimeRemainingSec = frenzyTimeRemaining,
+                            floatingCoins = activeFloatingCoins,
                             timeUntilDailyResetFormatted = countdownFormatted,
                             lastMissionDayEpoch = if (current.lastMissionDayEpoch == 0L) currentEpochDay else current.lastMissionDayEpoch,
+                            marketCondition = newMarketCondition,
+                            marketConditionTimeRemainingSec = newMarketTime,
+                            crisisTimeRemainingSec = newCrisisTime,
+                            activeCrisis = newCrisis,
+                            multiplierTimeRemainingSec = newMultTime,
+                            globalMultiplier = newMult,
+                            autoTapperTimeRemainingSec = newAutoTime,
+                            isAutoTapperActive = stillAutoActive,
+                            adBoostTimeRemainingSec = newAdBoostTime,
+                            auctionLots = updatedAuctionLots,
+                            sponsorshipContracts = updatedSponsorships,
+                            careerStats = updatedStats,
                             feedbackMessage = marketFeedback ?: current.feedbackMessage
                         )
                     }
@@ -2100,9 +2098,24 @@ class EmpireGameViewModel(application: Application) : AndroidViewModel(applicati
     fun resetGameProgress() {
         val app = getApplication<Application>()
         GameSaveManager.clearSave(app)
-        _uiState.value = GameUiState()
+        _uiState.value = GameUiState(
+            cash = 0.0,
+            totalCashEarned = 0.0,
+            dailyCashEarned = 0.0,
+            clickPower = 1.0,
+            clickLevel = 1,
+            businesses = GameRepository.getDefaultBusinesses(),
+            stocks = GameRepository.getDefaultStocks(),
+            executives = GameRepository.getDefaultExecutives(),
+            adNetworks = GameRepository.getDefaultAdNetworks(),
+            achievements = GameRepository.getDefaultAchievements(),
+            dailyQuests = GameRepository.getDefaultDailyQuests(),
+            techUpgrades = GameRepository.getDefaultTechUpgrades(),
+            luxuryAssets = GameRepository.getDefaultLuxuryAssets()
+        )
         saveCurrentGameState()
-        showFeedback("Partie réinitialisée à zéro.")
+        publishMyScoreToOnlineLeaderboard(silent = true)
+        showFeedback("🔄 Partie réinitialisée avec succès ! Économie rééquilibrée.")
     }
 
     private fun startNewsRotationLoop() {

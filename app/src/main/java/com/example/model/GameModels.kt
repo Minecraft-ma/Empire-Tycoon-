@@ -30,7 +30,7 @@ enum class BusinessCategory(
     val shortName: String,
     val emoji: String,
     val description: String,
-    val startingPrice: Double = 10.0
+    val startingPrice: Double = 25.0
 ) {
     MAGASINS(
         id = "MAGASINS",
@@ -38,7 +38,7 @@ enum class BusinessCategory(
         shortName = "Magasins",
         emoji = "🏬",
         description = "Kiosques, commerces, cafés, supermarchés & luxe",
-        startingPrice = 10.0
+        startingPrice = 25.0
     ),
     HOUSES(
         id = "HOUSES",
@@ -46,7 +46,7 @@ enum class BusinessCategory(
         shortName = "Maisons",
         emoji = "🏡",
         description = "Maisons de banlieue, villas, immeubles & gratte-ciel",
-        startingPrice = 185000.0
+        startingPrice = 95000.0
     ),
     TAXI(
         id = "TAXI",
@@ -54,7 +54,7 @@ enum class BusinessCategory(
         shortName = "Taxis",
         emoji = "🚕",
         description = "Chauffeurs VTC, flottes de taxis urbains & limousines",
-        startingPrice = 350.0
+        startingPrice = 950.0
     ),
     LIVRAISON(
         id = "LIVRAISON",
@@ -62,7 +62,7 @@ enum class BusinessCategory(
         shortName = "Delivery",
         emoji = "🚚",
         description = "Coursiers express, centres de tri et logistique de fret",
-        startingPrice = 8000.0
+        startingPrice = 4500.0
     ),
     BANQUE(
         id = "BANQUE",
